@@ -3,7 +3,17 @@
 
 @config '../../../tailwind.config.mjs';
 
-@custom-variant dark (&:is([data-theme='dark'] *));
+/* Varian `dark:` sengaja dimatikan — selector di bawah tidak pernah cocok.
+ *
+ * Situs ITSA punya SATU tampilan (DESIGN.md §1), jadi tidak ada mode gelap
+ * terpisah. Menyamakan nilai token saja TIDAK cukup: `dark:` bekerja lewat
+ * selector, bukan nilai, jadi utility seperti `dark:bg-card` tetap berganti
+ * dan sempat bikin footer cream + teks putih (kontras ~1.05:1).
+ *
+ * Baris ini JANGAN dihapus begitu saja: tanpa @custom-variant, Tailwind v4
+ * memakai default `prefers-color-scheme: dark`, yang justru membuat tampilan
+ * ikut setelan OS pengunjung dan lepas dari kendali kita. */
+@custom-variant dark (&:where([data-theme='__disabled__'] *));
 @custom-variant sm (@media (width >= theme(--breakpoint-sm)));
 @custom-variant md (@media (width >= theme(--breakpoint-md)));
 @custom-variant lg (@media (width >= theme(--breakpoint-lg)));
