@@ -7,6 +7,14 @@ node_modules
 next-env.d.ts
 .vercel
 
+# Artefak TypeScript incremental build
+tsconfig.tsbuildinfo
+
+# SQLite database (lokal, jangan di-commit)
+*.db
+*.db-journal
+*.db-wal
+
 # Payload default media upload directory
 public/media/
 

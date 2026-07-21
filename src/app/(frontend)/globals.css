@@ -43,8 +43,34 @@
   --breakpoint-lg: 64rem;
   --breakpoint-xl: 80rem;
   --breakpoint-2xl: 86rem;
+
+  /* Tipografi — DESIGN.md §3 */
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
-  --font-sans: var(--font-geist-sans);
+
+  /* ---------------------------------------------------------------
+   * Palet ITSA — DESIGN.md §2. Ini sumber kebenaran warna.
+   * Pakai lewat utility brand (bg-forest, text-cream, bg-gold, ...)
+   * atau lewat token semantik di bawah (bg-background, bg-card, ...).
+   * JANGAN hardcode hex di komponen.
+   * ------------------------------------------------------------- */
+
+  /* Dominan (~70%) */
+  --color-forest: #143a28; /* background utama, navbar, mayoritas section */
+  --color-forest-elevated: #1c4a34; /* kartu/panel di atas latar gelap, hover */
+  --color-forest-deep: #0e2a1d; /* footer "hijau paling tua" (turunan) */
+  --color-forest-line: #2a5a41; /* garis/border halus di atas hijau (turunan) */
+
+  /* Sekunder (~20%) */
+  --color-cream: #fff7e6; /* section terang + teks utama di atas hijau */
+
+  /* Aksen (~10%) — hanya sebagai ISIAN, tidak pernah jadi teks */
+  --color-gold: #ffd500;
+
+  /* Pendukung */
+  --color-olive: #576238; /* teks sekunder & border di atas cream */
+  --color-mist: #c8d3c8; /* teks sekunder di atas hijau (turunan) */
 }
 
 @layer utilities {
@@ -86,81 +112,57 @@
   }
 }
 
-:root {
-  --background: oklch(100% 0 0deg);
-  --foreground: oklch(14.5% 0 0deg);
-  --card: oklch(96.5% 0.005 265deg);
-  --card-foreground: oklch(14.5% 0 0deg);
-  --popover: oklch(100% 0 0deg);
-  --popover-foreground: oklch(14.5% 0 0deg);
-  --primary: oklch(20.5% 0 0deg);
-  --primary-foreground: oklch(98.5% 0 0deg);
-  --secondary: oklch(97% 0 0deg);
-  --secondary-foreground: oklch(20.5% 0 0deg);
-  --muted: oklch(97% 0 0deg);
-  --muted-foreground: oklch(55.6% 0 0deg);
-  --accent: oklch(97% 0 0deg);
-  --accent-foreground: oklch(20.5% 0 0deg);
-  --destructive: oklch(57.7% 0.245 27.325deg);
-  --destructive-foreground: oklch(57.7% 0.245 27.325deg);
-  --border: oklch(92.2% 0 0deg);
-  --input: oklch(92.2% 0 0deg);
-  --ring: oklch(70.8% 0 0deg);
-  --chart-1: oklch(64.6% 0.222 41.116deg);
-  --chart-2: oklch(60% 0.118 184.704deg);
-  --chart-3: oklch(39.8% 0.07 227.392deg);
-  --chart-4: oklch(82.8% 0.189 84.429deg);
-  --chart-5: oklch(76.9% 0.188 70.08deg);
-  --radius: 0.625rem;
-  --sidebar: oklch(98.5% 0 0deg);
-  --sidebar-foreground: oklch(14.5% 0 0deg);
-  --sidebar-primary: oklch(20.5% 0 0deg);
-  --sidebar-primary-foreground: oklch(98.5% 0 0deg);
-  --sidebar-accent: oklch(97% 0 0deg);
-  --sidebar-accent-foreground: oklch(20.5% 0 0deg);
-  --sidebar-border: oklch(92.2% 0 0deg);
-  --sidebar-ring: oklch(70.8% 0 0deg);
-  --success: oklch(78% 0.08 200deg);
-  --warning: oklch(89% 0.1 75deg);
-  --error: oklch(75% 0.15 25deg);
-}
+/* -----------------------------------------------------------------
+ * Token semantik → palet ITSA.
+ *
+ * Situs ITSA punya SATU tampilan: hijau-dominan & gelap (DESIGN.md §1).
+ * Bukan situs light/dark-mode. Karena itu :root dan [data-theme='dark']
+ * sengaja dibuat IDENTIK — biar toggle theme bawaan template tidak bisa
+ * merusak brand. Toggle-nya sendiri dicopot di langkah navbar/footer.
+ *
+ * Ritme terang/gelap dibuat per-SECTION (band cream di antara section
+ * hijau), bukan lewat theme switch.
+ * --------------------------------------------------------------- */
 
-[data-theme='dark'] {
-  --background: oklch(14.5% 0 0deg);
-  --foreground: oklch(98.5% 0 0deg);
-  --card: oklch(17% 0 0deg);
-  --card-foreground: oklch(98.5% 0 0deg);
-  --popover: oklch(14.5% 0 0deg);
-  --popover-foreground: oklch(98.5% 0 0deg);
-  --primary: oklch(98.5% 0 0deg);
-  --primary-foreground: oklch(20.5% 0 0deg);
-  --secondary: oklch(26.9% 0 0deg);
-  --secondary-foreground: oklch(98.5% 0 0deg);
-  --muted: oklch(26.9% 0 0deg);
-  --muted-foreground: oklch(70.8% 0 0deg);
-  --accent: oklch(26.9% 0 0deg);
-  --accent-foreground: oklch(98.5% 0 0deg);
-  --destructive: oklch(39.6% 0.141 25.723deg);
-  --destructive-foreground: oklch(63.7% 0.237 25.331deg);
-  --border: oklch(26.9% 0 0deg);
-  --input: oklch(26.9% 0 0deg);
-  --ring: oklch(43.9% 0 0deg);
-  --chart-1: oklch(48.8% 0.243 264.376deg);
-  --chart-2: oklch(69.6% 0.17 162.48deg);
-  --chart-3: oklch(76.9% 0.188 70.08deg);
-  --chart-4: oklch(62.7% 0.265 303.9deg);
-  --chart-5: oklch(64.5% 0.246 16.439deg);
-  --sidebar: oklch(20.5% 0 0deg);
-  --sidebar-foreground: oklch(98.5% 0 0deg);
-  --sidebar-primary: oklch(48.8% 0.243 264.376deg);
-  --sidebar-primary-foreground: oklch(98.5% 0 0deg);
-  --sidebar-accent: oklch(26.9% 0 0deg);
-  --sidebar-accent-foreground: oklch(98.5% 0 0deg);
-  --sidebar-border: oklch(26.9% 0 0deg);
-  --sidebar-ring: oklch(43.9% 0 0deg);
-  --success: oklch(28% 0.1 200deg);
-  --warning: oklch(35% 0.08 70deg);
-  --error: oklch(45% 0.1 25deg);
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  /* Permukaan gelap — porsi 70% */
+  --background: var(--color-forest);
+  --foreground: var(--color-cream);
+
+  /* Kartu = cream di atas latar hijau (DESIGN.md §4) */
+  --card: var(--color-cream);
+  --card-foreground: var(--color-forest);
+
+  --popover: var(--color-forest-elevated);
+  --popover-foreground: var(--color-cream);
+
+  /* Tombol utama = isian gold + teks forest (DESIGN.md §4) */
+  --primary: var(--color-gold);
+  --primary-foreground: var(--color-forest);
+
+  /* Permukaan elevasi di atas hijau */
+  --secondary: var(--color-forest-elevated);
+  --secondary-foreground: var(--color-cream);
+  --accent: var(--color-forest-elevated);
+  --accent-foreground: var(--color-cream);
+
+  --muted: var(--color-forest-elevated);
+  --muted-foreground: var(--color-mist);
+
+  --border: var(--color-forest-line);
+  --input: var(--color-forest-line);
+  --ring: var(--color-gold); /* fokus keyboard harus kelihatan (DESIGN.md §7) */
+
+  --radius: 0.75rem; /* 12px — radius kartu (DESIGN.md §4) */
+
+  /* State — disetel biar tetap kebaca di atas hijau tua */
+  --destructive: #e5484d;
+  --destructive-foreground: #fff7e6;
+  --success: #4cc38a;
+  --warning: #ffd500;
+  --error: #e5484d;
 }
 
 @theme inline {
@@ -183,23 +185,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
@@ -209,16 +198,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground min-h-[100vh] flex flex-col;
+    font-family: var(--font-sans);
+    line-height: 1.6; /* DESIGN.md §3 */
+    -webkit-font-smoothing: antialiased;
   }
-}
 
-html {
-  opacity: 0;
-}
-
-html[data-theme='dark'],
-html[data-theme='light'] {
-  opacity: initial;
+  /* Heading pakai Plus Jakarta Sans. Ukuran & bobot tetap diatur lewat
+   * utility di tiap komponen (template me-reset-nya di atas). */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    line-height: 1.2; /* DESIGN.md §3 */
+  }
 }
