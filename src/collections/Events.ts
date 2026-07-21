@@ -27,7 +27,7 @@ export const Events: CollectionConfig<'events'> = {
   },
   admin: {
     useAsTitle: 'judul',
-    defaultColumns: ['judul', 'tanggalMulai', 'status', 'divisi'],
+    defaultColumns: ['judul', 'tanggalMulai', 'status', 'lokasi', 'divisi'],
     description:
       'Kegiatan himpunan. Satu entri dipakai bersama oleh timeline, kalender, dan halaman detail.',
   },
@@ -40,6 +40,9 @@ export const Events: CollectionConfig<'events'> = {
     tanggalMulai: true,
     status: true,
     thumbnail: true,
+    lokasi: true,
+    gratis: true,
+    htm: true,
   },
   fields: [
     {
@@ -63,6 +66,50 @@ export const Events: CollectionConfig<'events'> = {
               admin: {
                 description: 'Gambar utama di kartu kegiatan dan halaman detail.',
               },
+            },
+            {
+              name: 'lokasi',
+              type: 'text',
+              required: true,
+              label: 'Lokasi',
+              admin: {
+                description:
+                  'Contoh: Aula PCR, Lab TI Gedung C, atau "Online (Zoom)" kalau daring.',
+              },
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'gratis',
+                  type: 'checkbox',
+                  defaultValue: true,
+                  label: 'Kegiatan ini gratis',
+                  admin: { width: '50%' },
+                },
+                {
+                  name: 'htm',
+                  type: 'number',
+                  min: 0,
+                  label: 'HTM (Rp)',
+                  admin: {
+                    width: '50%',
+                    step: 1000,
+                    // Pola yang sama dengan tab Dokumentasi & Recap: field baru
+                    // muncul kalau memang relevan.
+                    condition: (data) => data?.gratis === false,
+                    description: 'Harga tiket masuk per peserta, angka saja tanpa titik.',
+                  },
+                  // Kalau tidak gratis, harga wajib diisi — mencegah kegiatan
+                  // berbayar tayang tanpa mencantumkan biaya.
+                  validate: (value: number | null | undefined, { siblingData }: any) => {
+                    if (siblingData?.gratis) return true
+                    if (value === null || value === undefined)
+                      return 'Isi HTM, atau centang "Kegiatan ini gratis".'
+                    return true
+                  },
+                },
+              ],
             },
             {
               name: 'deskripsi',

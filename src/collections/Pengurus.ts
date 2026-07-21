@@ -24,7 +24,7 @@ export const Pengurus: CollectionConfig<'pengurus'> = {
   },
   admin: {
     useAsTitle: 'nama',
-    defaultColumns: ['nama', 'jabatan', 'divisi', 'periode'],
+    defaultColumns: ['nama', 'jabatan', 'divisi', 'angkatan', 'periode'],
     description: 'Anggota kepengurusan. Tampil di halaman Kabinet, dikelompokkan per divisi.',
   },
   // Grid Kabinet diurutkan berdasarkan divisi lalu urutan jabatan.
@@ -64,6 +64,26 @@ export const Pengurus: CollectionConfig<'pengurus'> = {
       label: 'Divisi',
       admin: {
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'angkatan',
+      type: 'number',
+      // Sengaja TIDAK required. Pengurus tidak memakai draft, jadi `required`
+      // menghasilkan kolom NOT NULL — dan itu tidak bisa ditambahkan ke tabel
+      // yang sudah berisi data tanpa nilai default, sehingga schema push
+      // berhenti di prompt "DATA LOSS WARNING" dan menggantungkan dev server.
+      // Setelah semua Pengurus terisi angkatannya, ini aman dijadikan required.
+      label: 'Angkatan',
+      admin: {
+        position: 'sidebar',
+        description: 'Tahun masuk kuliah, contoh: 2023.',
+      },
+      validate: (value: number | null | undefined) => {
+        if (value === null || value === undefined) return true
+        return value >= 2000 && value <= new Date().getFullYear() + 1
+          ? true
+          : 'Angkatan harus berupa tahun yang masuk akal, contoh 2023.'
       },
     },
     {

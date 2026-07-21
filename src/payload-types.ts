@@ -791,6 +791,15 @@ export interface Event {
    * Gambar utama di kartu kegiatan dan halaman detail.
    */
   thumbnail: number | Media;
+  /**
+   * Contoh: Aula PCR, Lab TI Gedung C, atau "Online (Zoom)" kalau daring.
+   */
+  lokasi: string;
+  gratis?: boolean | null;
+  /**
+   * Harga tiket masuk per peserta, angka saja tanpa titik.
+   */
+  htm?: number | null;
   deskripsi: {
     root: {
       type: string;
@@ -890,6 +899,10 @@ export interface Pengurus {
    */
   jabatan: string;
   divisi: number | Divisi;
+  /**
+   * Tahun masuk kuliah, contoh: 2023.
+   */
+  angkatan?: number | null;
   /**
    * Contoh: 2025 atau 2025/2026. Dipakai untuk memisahkan kabinet antar tahun.
    */
@@ -1375,6 +1388,9 @@ export interface PostsSelect<T extends boolean = true> {
 export interface EventsSelect<T extends boolean = true> {
   judul?: T;
   thumbnail?: T;
+  lokasi?: T;
+  gratis?: T;
+  htm?: T;
   deskripsi?: T;
   linkDokumentasi?: T;
   recap?: T;
@@ -1397,6 +1413,7 @@ export interface PengurusSelect<T extends boolean = true> {
   foto?: T;
   jabatan?: T;
   divisi?: T;
+  angkatan?: T;
   periode?: T;
   urutan?: T;
   sosial?:
