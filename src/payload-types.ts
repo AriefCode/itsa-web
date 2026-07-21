@@ -69,6 +69,9 @@ export interface Config {
   collections: {
     pages: Page;
     posts: Post;
+    events: Event;
+    pengurus: Pengurus;
+    divisi: Divisi;
     media: Media;
     categories: Category;
     users: User;
@@ -91,6 +94,9 @@ export interface Config {
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    pengurus: PengurusSelect<false> | PengurusSelect<true>;
+    divisi: DivisiSelect<false> | DivisiSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -773,6 +779,146 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * Kegiatan himpunan. Satu entri dipakai bersama oleh timeline, kalender, dan halaman detail.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  judul: string;
+  /**
+   * Gambar utama di kartu kegiatan dan halaman detail.
+   */
+  thumbnail: number | Media;
+  deskripsi: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * URL folder Google Drive berisi foto/video kegiatan. Pastikan izin akses sudah "anyone with the link".
+   */
+  linkDokumentasi?: string | null;
+  /**
+   * Ringkasan setelah kegiatan selesai. Tampil di halaman detail dan blok recap di Home.
+   */
+  recap?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Diatur manual. Ingat mengubahnya jadi "Selesai" setelah kegiatan lewat, kalau tidak kegiatan lama akan terus tampil sebagai akan datang.
+   */
+  status: 'upcoming' | 'completed';
+  tanggalMulai: string;
+  /**
+   * Kosongkan kalau kegiatan hanya satu hari.
+   */
+  tanggalSelesai?: string | null;
+  divisi: number | Divisi;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Daftar divisi. Urutan menentukan susunan tampil di halaman Kabinet.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "divisi".
+ */
+export interface Divisi {
+  id: number;
+  nama: string;
+  /**
+   * Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet.
+   */
+  deskripsiSingkat: string;
+  /**
+   * Angka kecil tampil lebih dulu. Divisi inti biasanya 1, 2, 3, ...
+   */
+  urutan: number;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Anggota kepengurusan. Tampil di halaman Kabinet, dikelompokkan per divisi.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pengurus".
+ */
+export interface Pengurus {
+  id: number;
+  nama: string;
+  /**
+   * Pakai rasio potret yang seragam (mis. 3:4) supaya grid Kabinet rapi.
+   */
+  foto: number | Media;
+  /**
+   * Contoh: Ketua Umum, Sekretaris, Staff Divisi Media.
+   */
+  jabatan: string;
+  divisi: number | Divisi;
+  /**
+   * Contoh: 2025 atau 2025/2026. Dipakai untuk memisahkan kabinet antar tahun.
+   */
+  periode: string;
+  /**
+   * Urutan dalam divisi. Ketua/koordinator biasanya 1.
+   */
+  urutan: number;
+  /**
+   * Semua opsional. Yang dikosongkan tidak akan tampil ikonnya.
+   */
+  sosial?: {
+    /**
+     * Username saja, tanpa @. Contoh: itsa.pcr
+     */
+    instagram?: string | null;
+    /**
+     * URL lengkap profil LinkedIn.
+     */
+    linkedin?: string | null;
+    /**
+     * Username saja.
+     */
+    github?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -969,6 +1115,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'posts';
         value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'pengurus';
+        value: number | Pengurus;
+      } | null)
+    | ({
+        relationTo: 'divisi';
+        value: number | Divisi;
       } | null)
     | ({
         relationTo: 'media';
@@ -1209,6 +1367,60 @@ export interface PostsSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  judul?: T;
+  thumbnail?: T;
+  deskripsi?: T;
+  linkDokumentasi?: T;
+  recap?: T;
+  status?: T;
+  tanggalMulai?: T;
+  tanggalSelesai?: T;
+  divisi?: T;
+  generateSlug?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pengurus_select".
+ */
+export interface PengurusSelect<T extends boolean = true> {
+  nama?: T;
+  foto?: T;
+  jabatan?: T;
+  divisi?: T;
+  periode?: T;
+  urutan?: T;
+  sosial?:
+    | T
+    | {
+        instagram?: T;
+        linkedin?: T;
+        github?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "divisi_select".
+ */
+export interface DivisiSelect<T extends boolean = true> {
+  nama?: T;
+  deskripsiSingkat?: T;
+  urutan?: T;
+  generateSlug?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
