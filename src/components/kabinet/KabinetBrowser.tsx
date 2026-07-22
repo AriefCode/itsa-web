@@ -1,13 +1,14 @@
 'use client'
 
 import React, { useDeferredValue, useMemo, useState } from 'react'
-import { LayoutGrid, Rows3, Search, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutGrid, Rows3, Search, Users } from 'lucide-react'
 
 import type { Divisi, Pengurus } from '@/payload-types'
 import { Media } from '@/components/Media'
 import { KartuPengurus } from './KartuPengurus'
 import { KaruselAnggota } from './KaruselAnggota'
 import { ModalPengurus } from './ModalPengurus'
+import { PANAH, TREK, useGeserMendatar } from './useGeserMendatar'
 
 export type Kelompok = { divisi: Divisi; anggota: Pengurus[] }
 
@@ -45,6 +46,14 @@ export const KabinetBrowser: React.FC<{ kelompok: Kelompok[] }> = ({ kelompok })
   const [tampilanGrid, setTampilanGrid] = useState(false)
   const [profil, setProfil] = useState<Pengurus | null>(null)
 
+  const {
+    trekRef: trekDivisi,
+    bisaMundur: divisiBisaMundur,
+    bisaMaju: divisiBisaMaju,
+    perbarui: perbaruiDivisi,
+    geser: geserDivisi,
+  } = useGeserMendatar(kelompok.length, kelompok)
+
   // Pencarian tetap lancar walau daftarnya panjang: hasilnya boleh tertinggal
   // satu frame dari ketikan, kotak isiannya tidak.
   const kunci = useDeferredValue(cari).trim().toLowerCase()
@@ -71,32 +80,65 @@ export const KabinetBrowser: React.FC<{ kelompok: Kelompok[] }> = ({ kelompok })
           </p>
         </div>
 
-        <div className="relative sm:w-72">
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mist"
-          />
-          <label htmlFor="cari-pengurus" className="sr-only">
-            Cari pengurus berdasarkan nama, jabatan, atau divisi
-          </label>
-          <input
-            id="cari-pengurus"
-            type="search"
-            value={cari}
-            onChange={(e) => setCari(e.target.value)}
-            placeholder="Cari nama, jabatan, divisi..."
-            className="w-full rounded-xl border border-forest-field bg-forest-elevated py-2.5 pl-10 pr-3.5 text-sm text-cream transition-colors duration-200 placeholder:text-mist/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 sm:w-72 sm:flex-none">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mist"
+            />
+            <label htmlFor="cari-pengurus" className="sr-only">
+              Cari pengurus berdasarkan nama, jabatan, atau divisi
+            </label>
+            <input
+              id="cari-pengurus"
+              type="search"
+              value={cari}
+              onChange={(e) => setCari(e.target.value)}
+              placeholder="Cari nama, jabatan, divisi..."
+              className="w-full rounded-xl border border-forest-field bg-forest-elevated py-2.5 pl-10 pr-3.5 text-sm text-cream transition-colors duration-200 placeholder:text-mist/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            />
+          </div>
+
+          {/* Panah hanya muncul kalau deretannya memang lebih panjang dari
+              kotaknya — pada kabinet berdivisi sedikit, tombol yang selalu
+              mati cuma jadi hiasan yang membingungkan. */}
+          {(divisiBisaMundur || divisiBisaMaju) && (
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => geserDivisi(-1)}
+                disabled={!divisiBisaMundur}
+                className={PANAH}
+              >
+                <span className="sr-only">Divisi sebelumnya</span>
+                <ChevronLeft className="size-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => geserDivisi(1)}
+                disabled={!divisiBisaMaju}
+                className={PANAH}
+              >
+                <span className="sr-only">Divisi berikutnya</span>
+                <ChevronRight className="size-4" aria-hidden />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Di layar sempit deretan divisi digeser mendatar; mulai md ia jadi
-          grid supaya seluruh divisi terbaca sekaligus. */}
-      <ul className="mt-7 flex snap-x gap-4 overflow-x-auto pb-2 [scrollbar-width:none] md:grid md:grid-cols-3 md:overflow-visible md:pb-0 xl:grid-cols-6 [&::-webkit-scrollbar]:hidden">
+      {/* Deretan divisi digeser mendatar di SEMUA ukuran layar, bukan berubah
+          jadi grid di layar lebar. Grid enam kolom rapi selama divisinya pas
+          enam; begitu himpunan menambah divisi ketujuh, barisnya pecah dan
+          divisi baru itu terlempar ke bawah di luar pandangan. */}
+      <ul ref={trekDivisi} onScroll={perbaruiDivisi} className={`${TREK} mt-7`}>
         {kelompok.map((k) => {
           const dipilih = !sedangMencari && k.divisi.id === aktif?.divisi.id
           return (
-            <li key={k.divisi.id} className="w-[68%] shrink-0 snap-start md:w-auto">
+            <li
+              key={k.divisi.id}
+              className="w-[68%] shrink-0 snap-start sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-5rem)/6)]"
+            >
               <button
                 type="button"
                 onClick={() => {

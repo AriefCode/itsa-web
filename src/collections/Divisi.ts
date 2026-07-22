@@ -3,6 +3,11 @@ import { slugField } from 'payload'
 
 import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
+import {
+  revalidateKabinet,
+  revalidateKabinetSetelahHapus,
+} from './hooks/revalidateKabinet'
+
 
 /**
  * Divisi kepengurusan ITSA.
@@ -12,6 +17,10 @@ import { authenticated } from '../access/authenticated'
  * merujuk ke sini, buat isinya lebih dulu sebelum mengisi Pengurus/Kegiatan.
  */
 export const Divisi: CollectionConfig<'divisi'> = {
+  hooks: {
+    afterChange: [revalidateKabinet],
+    afterDelete: [revalidateKabinetSetelahHapus],
+  },
   slug: 'divisi',
   labels: {
     singular: 'Divisi',

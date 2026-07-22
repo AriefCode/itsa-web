@@ -2,6 +2,11 @@ import type { CollectionConfig } from 'payload'
 
 import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
+import {
+  revalidateKabinet,
+  revalidateKabinetSetelahHapus,
+} from './hooks/revalidateKabinet'
+
 
 /**
  * Anggota kepengurusan ITSA — sumber data halaman Kabinet.
@@ -11,6 +16,10 @@ import { authenticated } from '../access/authenticated'
  * tetap utuh dan bisa ditampilkan sebagai arsip.
  */
 export const Pengurus: CollectionConfig<'pengurus'> = {
+  hooks: {
+    afterChange: [revalidateKabinet],
+    afterDelete: [revalidateKabinetSetelahHapus],
+  },
   slug: 'pengurus',
   labels: {
     singular: 'Pengurus',
