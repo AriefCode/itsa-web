@@ -4,7 +4,7 @@ import React from 'react'
 import type { Event, Faq } from '@/payload-types'
 import { KartuKegiatan } from './KartuKegiatan'
 import { Reveal } from '@/components/motion/Reveal'
-import { ambilTeks } from '@/utilities/lexicalText'
+import { AccordionFaq } from '@/components/faq/AccordionFaq'
 
 /** Judul section beserta tautan opsional ke halaman lengkapnya. */
 const KepalaSeksi: React.FC<{ judul: string; tautan?: { label: string; href: string } }> = ({
@@ -118,35 +118,11 @@ export const FaqRingkas: React.FC<{ faq: Faq[] }> = ({ faq }) => (
         {faq.length === 0 ? (
           <Kosong>Belum ada pertanyaan yang ditambahkan.</Kosong>
         ) : (
-          <div className="divide-y divide-forest-line rounded-lg border border-forest-line">
-            {faq.map((f) => (
-              <details key={f.id} className="group px-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-cream marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
-                  <span className="font-medium">{f.pertanyaan}</span>
-                  {/* Tanda buka/tutup dari CSS, bukan ikon: satu elemen, dua keadaan */}
-                  <span
-                    aria-hidden
-                    className="relative size-4 shrink-0 before:absolute before:left-0 before:top-1/2 before:h-0.5 before:w-4 before:-translate-y-1/2 before:bg-gold after:absolute after:left-1/2 after:top-0 after:h-4 after:w-0.5 after:-translate-x-1/2 after:bg-gold after:transition-transform group-open:after:rotate-90 group-open:after:opacity-0"
-                  />
-                </summary>
-                <div className="max-w-[75ch] pb-5 text-sm leading-relaxed text-mist">
-                  <RichTextRingkas data={f.jawaban} />
-                </div>
-              </details>
-            ))}
-          </div>
+          <AccordionFaq faq={faq} ringkas />
         )}
       </div>
     </div>
   </section>
-)
-
-/**
- * Menampilkan jawaban FAQ sebagai teks biasa.
- * Blok FAQ di beranda memang ringkas; format lengkap ada di halaman /faq.
- */
-const RichTextRingkas: React.FC<{ data: Faq['jawaban'] }> = ({ data }) => (
-  <p>{ambilTeks(data)}</p>
 )
 
 /** Ajakan mengirim aspirasi, band terakhir sebelum footer. */
