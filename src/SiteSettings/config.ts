@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { authenticated } from '../access/authenticated'
+import { revalidateSiteSettings } from './hooks/revalidateSiteSettings'
 
 /**
  * Pengaturan situs yang dipakai lintas halaman.
@@ -154,4 +155,7 @@ export const SiteSettings: GlobalConfig = {
       ],
     },
   ],
+  hooks: {
+    afterChange: [revalidateSiteSettings],
+  },
 }

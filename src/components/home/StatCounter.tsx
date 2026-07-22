@@ -19,6 +19,17 @@ export type Statistik = {
  * textContent, bukan lewat state React. Menyimpan nilai per frame di state
  * akan merender ulang pohon komponen 60 kali per detik tanpa alasan.
  */
+/**
+ * Pemisah ribuan hanya dipakai mulai lima digit.
+ *
+ * Angka statistik himpunan hampir selalu di bawah seribu, sementara satu
+ * kolom biasanya berisi TAHUN berdiri. Memformat semuanya membuat 2009
+ * tampil sebagai "2.009", yang salah untuk sebuah tahun. Ambang lima digit
+ * membuat tahun dan jumlah kecil tampil apa adanya, tanpa mengorbankan
+ * keterbacaan angka yang memang besar.
+ */
+const formatAngka = (n: number) => (n >= 10000 ? n.toLocaleString('id-ID') : String(n))
+
 const AngkaNaik: React.FC<{ nilai: number; akhiran?: string | null }> = ({ nilai, akhiran }) => {
   const ref = useRef<HTMLSpanElement>(null)
 
@@ -27,7 +38,7 @@ const AngkaNaik: React.FC<{ nilai: number; akhiran?: string | null }> = ({ nilai
     if (!el) return
 
     const langsungTampilkan = () => {
-      el.textContent = `${nilai.toLocaleString('id-ID')}${akhiran ?? ''}`
+      el.textContent = `${formatAngka(nilai)}${akhiran ?? ''}`
     }
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -49,7 +60,7 @@ const AngkaNaik: React.FC<{ nilai: number; akhiran?: string | null }> = ({ nilai
           const progres = Math.min((waktu - mulai) / durasi, 1)
           // easeOutCubic: cepat di awal lalu melambat, terasa lebih hidup
           const eased = 1 - Math.pow(1 - progres, 3)
-          el.textContent = `${Math.round(nilai * eased).toLocaleString('id-ID')}${akhiran ?? ''}`
+          el.textContent = `${formatAngka(Math.round(nilai * eased))}${akhiran ?? ''}`
           if (progres < 1) frame = requestAnimationFrame(jalan)
         }
         frame = requestAnimationFrame(jalan)
@@ -65,7 +76,7 @@ const AngkaNaik: React.FC<{ nilai: number; akhiran?: string | null }> = ({ nilai
   }, [nilai, akhiran])
 
   // Nilai awal ditulis di server supaya angkanya tetap ada kalau JS gagal.
-  return <span ref={ref}>{`${nilai.toLocaleString('id-ID')}${akhiran ?? ''}`}</span>
+  return <span ref={ref}>{`${formatAngka(nilai)}${akhiran ?? ''}`}</span>
 }
 
 export const StatCounter: React.FC<{ statistik: Statistik[] }> = ({ statistik }) => {
