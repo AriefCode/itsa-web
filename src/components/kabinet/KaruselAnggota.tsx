@@ -26,6 +26,7 @@ export const KaruselAnggota: React.FC<{
   const { propsTrek, aktif, bisaMundur, bisaMaju, geser, keIndeks } = useGeserMendatar(
     anggota.length,
     anggota,
+    { lacakAktif: true },
   )
 
   return (

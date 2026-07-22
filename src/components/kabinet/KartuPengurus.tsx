@@ -45,7 +45,7 @@ export const kanalSosial = (pengurus: Pengurus): Kanal[] => {
  * tautan (tombol di dalam tombol tidak sah di HTML dan bikin bingung
  * pembaca layar).
  */
-export const KartuPengurus: React.FC<{
+const KartuPengurusDasar: React.FC<{
   pengurus: Pengurus
   onBuka: (pengurus: Pengurus) => void
   /** Urutan kemunculan; dipakai untuk menunda animasi masuk. */
@@ -117,3 +117,12 @@ export const KartuPengurus: React.FC<{
     </article>
   )
 }
+
+/**
+ * Dibungkus memo karena kartunya duduk di dalam trek yang digulir: titik
+ * indikator carousel berubah hampir tiap frame saat digeser, dan tanpa ini
+ * setiap perubahan itu ikut menyusun ulang seluruh kartu beserta gambarnya.
+ * `onBuka` yang dioper selalu setter useState, jadi identitasnya stabil dan
+ * perbandingan dangkal memo memang berlaku.
+ */
+export const KartuPengurus = React.memo(KartuPengurusDasar)

@@ -5,6 +5,32 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 /** Geseran dianggap seretan, bukan klik, setelah melewati jarak ini. */
 const AMBANG_SERET = 5
 
+/** Delta roda sebesar ini ke atas dianggap tetikus bernotch, bukan trackpad. */
+const AMBANG_NOTCH = 40
+
+/** Berapa lama snap tetap dimatikan setelah putaran roda terakhir. */
+const JEDA_SNAP_MS = 140
+
+/**
+ * Guliran terprogram tidak otomatis menghormati prefers-reduced-motion —
+ * berbeda dengan `scroll-behavior: smooth` di CSS, `behavior: 'smooth'` tetap
+ * dianimasikan browser. Jadi setelannya diperiksa sendiri di sini.
+ */
+const perilakuGulir = (): ScrollBehavior =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? 'auto'
+    : 'smooth'
+
+type Opsi = {
+  /**
+   * Lacak kartu mana yang sedang di depan. Hanya perlu kalau pemakainya
+   * menampilkan titik indikator — melacaknya berarti setState pada hampir
+   * setiap kejadian gulir, dan itu me-render ulang seluruh pohon di atasnya.
+   */
+  lacakAktif?: boolean
+}
+
 /**
  * Kendali untuk daftar yang digeser mendatar.
  *
@@ -19,7 +45,9 @@ const AMBANG_SERET = 5
  * Ada tiga cara menggeser, karena satu cara saja selalu meninggalkan sebagian
  * pengguna: sentuhan (bawaan browser), roda mouse, dan seret dengan tetikus.
  */
-export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
+export const useGeserMendatar = (jumlah: number, kunciMuat: unknown, opsi: Opsi = {}) => {
+  const { lacakAktif = false } = opsi
+
   const trekRef = useRef<HTMLUListElement>(null)
   const [aktif, setAktif] = useState(0)
   const [bisaMundur, setBisaMundur] = useState(false)
@@ -27,34 +55,77 @@ export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
   const [sedangSeret, setSedangSeret] = useState(false)
 
   const seretRef = useRef({ turun: false, mulaiX: 0, mulaiScroll: 0, bergerak: false })
+  const rafRef = useRef<number | null>(null)
+  const jedaSnapRef = useRef<number | null>(null)
 
-  const perbarui = useCallback(() => {
+  /**
+   * Snap dimatikan sementara selama gerakan berlangsung.
+   *
+   * `scroll-snap-type` melawan penggeseran bertahap: tiap kali scrollLeft
+   * diubah sedikit, browser langsung menariknya balik ke titik snap terdekat,
+   * dan hasilnya tersendat-sendat. Snap dihidupkan lagi begitu gerakannya
+   * berhenti, supaya kartunya tetap berlabuh rapi di tepi.
+   */
+  const tundaSnap = useCallback(() => {
+    const t = trekRef.current
+    if (!t) return
+    t.style.scrollSnapType = 'none'
+    if (jedaSnapRef.current) window.clearTimeout(jedaSnapRef.current)
+    jedaSnapRef.current = window.setTimeout(() => {
+      t.style.scrollSnapType = ''
+    }, JEDA_SNAP_MS)
+  }, [])
+
+  const hitung = useCallback(() => {
     const t = trekRef.current
     if (!t) return
     const sisa = t.scrollWidth - t.clientWidth
     setBisaMundur(t.scrollLeft > 8)
     setBisaMaju(t.scrollLeft < sisa - 8)
 
+    if (!lacakAktif) return
     const kartu = t.children[0] as HTMLElement | undefined
     if (kartu) {
       const langkah = kartu.offsetWidth + 16
       setAktif(Math.min(jumlah - 1, Math.max(0, Math.round(t.scrollLeft / langkah))))
     }
-  }, [jumlah])
+  }, [jumlah, lacakAktif])
+
+  /**
+   * Kejadian gulir bisa datang lebih sering daripada frame yang digambar.
+   * Tanpa penahan ini, satu kali menyeret memicu puluhan render React per
+   * detik — dan tiap render menyusun ulang seluruh kartu di dalamnya, yang
+   * justru jadi sumber tersendatnya.
+   */
+  const perbarui = useCallback(() => {
+    if (rafRef.current !== null) return
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = null
+      hitung()
+    })
+  }, [hitung])
+
+  useEffect(
+    () => () => {
+      if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current)
+      if (jedaSnapRef.current) window.clearTimeout(jedaSnapRef.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     const t = trekRef.current
     if (!t) return
     // Isi berganti: kembali ke awal lalu hitung ulang.
     t.scrollLeft = 0
-    perbarui()
+    hitung()
 
     // Lebar kotaknya bisa berubah tanpa jendela ikut berubah (mis. panel
     // membuka atau kolom sidebar menyusut), jadi ukurannya diamati langsung.
     const pengamat = new ResizeObserver(perbarui)
     pengamat.observe(t)
     return () => pengamat.disconnect()
-  }, [perbarui, kunciMuat])
+  }, [hitung, perbarui, kunciMuat])
 
   /**
    * Roda mouse tegak dialihkan jadi geseran mendatar.
@@ -85,12 +156,21 @@ export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
       if (!masihBisa) return
 
       e.preventDefault()
-      t.scrollLeft += delta
+      tundaSnap()
+
+      // Trackpad mengirim banyak delta kecil yang sudah mulus sendiri, jadi
+      // digeser langsung. Tetikus bernotch mengirim satu lompatan besar per
+      // klik roda; itu yang dianimasikan supaya tidak terasa mematah.
+      if (Math.abs(delta) >= AMBANG_NOTCH) {
+        t.scrollBy({ left: delta, behavior: perilakuGulir() })
+      } else {
+        t.scrollLeft += delta
+      }
     }
 
     t.addEventListener('wheel', padaRoda, { passive: false })
     return () => t.removeEventListener('wheel', padaRoda)
-  }, [])
+  }, [tundaSnap])
 
   const bisaGeser = bisaMundur || bisaMaju
 
@@ -118,6 +198,10 @@ export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
       if (Math.abs(jarak) < AMBANG_SERET) return
       s.bergerak = true
       setSedangSeret(true)
+      // Snap dimatikan selama seluruh seretan, bukan lewat tundaSnap yang
+      // berbasis waktu: seretan lambat bisa berhenti sejenak di tengah jalan,
+      // dan snap yang hidup lagi di situ akan menyentak kartunya.
+      t.style.scrollSnapType = 'none'
       // Ditangkap setelah ambang terlampaui, bukan saat tombol ditekan, supaya
       // klik biasa pada kartu tidak pernah ikut tertahan.
       e.currentTarget.setPointerCapture(e.pointerId)
@@ -128,6 +212,11 @@ export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
   const padaPointerLepas = (e: React.PointerEvent<HTMLUListElement>) => {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
+    }
+    // Snap dinyalakan lagi setelah seretan selesai; di sinilah kartunya
+    // berlabuh mulus ke posisi terdekat.
+    if (seretRef.current.bergerak && trekRef.current) {
+      trekRef.current.style.scrollSnapType = ''
     }
     seretRef.current.turun = false
     setSedangSeret(false)
@@ -148,13 +237,14 @@ export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
   const geser = (arah: 1 | -1) => {
     const t = trekRef.current
     if (!t) return
-    t.scrollBy({ left: arah * Math.round(t.clientWidth * 0.8), behavior: 'smooth' })
+    t.scrollBy({ left: arah * Math.round(t.clientWidth * 0.8), behavior: perilakuGulir() })
   }
 
   const keIndeks = (i: number) => {
     const t = trekRef.current
     const kartu = t?.children[i] as HTMLElement | undefined
-    if (t && kartu) t.scrollTo({ left: kartu.offsetLeft - t.offsetLeft, behavior: 'smooth' })
+    if (t && kartu)
+      t.scrollTo({ left: kartu.offsetLeft - t.offsetLeft, behavior: perilakuGulir() })
   }
 
   /**
@@ -183,7 +273,15 @@ export const useGeserMendatar = (jumlah: number, kunciMuat: unknown) => {
   return { trekRef, propsTrek, aktif, bisaMundur, bisaMaju, geser, keIndeks }
 }
 
-/** Kelas trek geser: scrollbar disembunyikan, snap aktif. */
+/**
+ * Kelas trek geser: scrollbar disembunyikan, snap aktif.
+ *
+ * SENGAJA tanpa `scroll-smooth`. Kalau `scroll-behavior: smooth` dipasang di
+ * trek, setiap penetapan scrollLeft saat menyeret ikut dianimasikan — kartunya
+ * jadi tertinggal di belakang kursor dan terasa seperti karet. Guliran yang
+ * memang perlu halus (panah, titik indikator, roda bernotch) sudah meminta
+ * `behavior: 'smooth'` sendiri, dan itu mengalahkan CSS.
+ */
 export const TREK =
   'flex snap-x gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
