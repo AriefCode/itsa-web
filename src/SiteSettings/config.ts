@@ -23,6 +23,46 @@ export const SiteSettings: GlobalConfig = {
       type: 'tabs',
       tabs: [
         {
+          label: 'Beranda',
+          description: 'Bagian paling atas halaman depan. Kosongkan untuk memakai teks bawaan.',
+          fields: [
+            {
+              name: 'hero',
+              type: 'group',
+              label: false,
+              fields: [
+                {
+                  name: 'judul',
+                  type: 'text',
+                  label: 'Judul Hero',
+                  admin: {
+                    description: 'Singkat dan tegas, idealnya di bawah 8 kata.',
+                  },
+                },
+                {
+                  name: 'subjudul',
+                  type: 'textarea',
+                  label: 'Subjudul',
+                  maxLength: 160,
+                  admin: {
+                    description: 'Satu kalimat penjelas, maksimal sekitar 20 kata.',
+                  },
+                },
+                {
+                  name: 'gambar',
+                  type: 'upload',
+                  relationTo: 'media',
+                  label: 'Gambar Hero',
+                  admin: {
+                    description:
+                      'Foto kegiatan atau kepengurusan. Kalau kosong, hero tampil sebagai blok teks saja.',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
           label: 'Media Sosial',
           description: 'Kosongkan yang tidak dipakai — ikonnya tidak akan tampil di footer.',
           fields: [

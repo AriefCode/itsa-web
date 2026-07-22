@@ -2042,6 +2042,20 @@ export interface Footer {
  */
 export interface SiteSetting {
   id: number;
+  hero?: {
+    /**
+     * Singkat dan tegas, idealnya di bawah 8 kata.
+     */
+    judul?: string | null;
+    /**
+     * Satu kalimat penjelas, maksimal sekitar 20 kata.
+     */
+    subjudul?: string | null;
+    /**
+     * Foto kegiatan atau kepengurusan. Kalau kosong, hero tampil sebagai blok teks saja.
+     */
+    gambar?: (number | null) | Media;
+  };
   sosial?: {
     /**
      * Username saja, tanpa @. Contoh: itsa.pcr
@@ -2145,6 +2159,13 @@ export interface FooterSelect<T extends boolean = true> {
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        judul?: T;
+        subjudul?: T;
+        gambar?: T;
+      };
   sosial?:
     | T
     | {

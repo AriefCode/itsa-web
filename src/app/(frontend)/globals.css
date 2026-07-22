@@ -216,6 +216,17 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Jaring pengaman komponen Reveal: kalau JavaScript mati, elemen yang
+   * menunggu IntersectionObserver tidak akan pernah dimunculkan. Konten tidak
+   * boleh hilang gara-gara animasi, jadi di lingkungan tanpa skrip semuanya
+   * langsung terlihat. */
+  @media (scripting: none) {
+    [data-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
   /* Heading pakai Plus Jakarta Sans. Ukuran & bobot tetap diatur lewat
    * utility di tiap komponen (template me-reset-nya di atas). */
   h1,
