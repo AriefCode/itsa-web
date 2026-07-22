@@ -72,6 +72,8 @@ export interface Config {
     events: Event;
     pengurus: Pengurus;
     divisi: Divisi;
+    faq: Faq;
+    aspirasi: Aspirasi;
     media: Media;
     categories: Category;
     users: User;
@@ -97,6 +99,8 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     pengurus: PengurusSelect<false> | PengurusSelect<true>;
     divisi: DivisiSelect<false> | DivisiSelect<true>;
+    faq: FaqSelect<false> | FaqSelect<true>;
+    aspirasi: AspirasiSelect<false> | AspirasiSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -118,10 +122,12 @@ export interface Config {
   globals: {
     header: Header;
     footer: Footer;
+    'site-settings': SiteSetting;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -251,6 +257,10 @@ export interface Post {
   };
   relatedPosts?: (number | Post)[] | null;
   categories?: (number | Category)[] | null;
+  /**
+   * Khusus berita Oprec: URL Google Form pendaftaran. Kalau diisi, tombol pendaftaran tampil di halaman berita.
+   */
+  link_eksternal?: string | null;
   meta?: {
     title?: string | null;
     /**
@@ -932,6 +942,67 @@ export interface Pengurus {
   createdAt: string;
 }
 /**
+ * Pertanyaan umum. Urutan kecil tampil lebih dulu; beberapa teratas ikut muncul di Home.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq".
+ */
+export interface Faq {
+  id: number;
+  pertanyaan: string;
+  /**
+   * Boleh pakai tautan, misalnya ke Google Form pendaftaran atau halaman Kegiatan.
+   */
+  jawaban: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Angka kecil tampil lebih dulu.
+   */
+  urutan: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Kiriman anonim dari warga TI. Tandai "Tampilkan di situs" setelah ditanggapi.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "aspirasi".
+ */
+export interface Aspirasi {
+  id: number;
+  /**
+   * Ditulis oleh pengirim anonim. Ubah hanya untuk menyensor hal yang tidak pantas.
+   */
+  isi: string;
+  /**
+   * Default mati. Centang setelah aspirasi ditanggapi dan layak tampil di halaman publik.
+   */
+  status_tampil?: boolean | null;
+  /**
+   * Jawaban pengurus yang tampil di bawah aspirasi ini.
+   */
+  respon_komentar?: string | null;
+  /**
+   * Opsional. Misalnya bukti tindak lanjut atau dokumentasi.
+   */
+  respon_foto?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -1140,6 +1211,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'divisi';
         value: number | Divisi;
+      } | null)
+    | ({
+        relationTo: 'faq';
+        value: number | Faq;
+      } | null)
+    | ({
+        relationTo: 'aspirasi';
+        value: number | Aspirasi;
       } | null)
     | ({
         relationTo: 'media';
@@ -1360,6 +1439,7 @@ export interface PostsSelect<T extends boolean = true> {
   content?: T;
   relatedPosts?: T;
   categories?: T;
+  link_eksternal?: T;
   meta?:
     | T
     | {
@@ -1436,6 +1516,29 @@ export interface DivisiSelect<T extends boolean = true> {
   urutan?: T;
   generateSlug?: T;
   slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq_select".
+ */
+export interface FaqSelect<T extends boolean = true> {
+  pertanyaan?: T;
+  jawaban?: T;
+  urutan?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "aspirasi_select".
+ */
+export interface AspirasiSelect<T extends boolean = true> {
+  isi?: T;
+  status_tampil?: T;
+  respon_komentar?: T;
+  respon_foto?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1910,6 +2013,53 @@ export interface Footer {
   createdAt?: string | null;
 }
 /**
+ * Tautan sosial media dan angka statistik yang tampil di Home & footer.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  sosial?: {
+    /**
+     * Username saja, tanpa @. Contoh: itsa.pcr
+     */
+    instagram?: string | null;
+    /**
+     * Username saja, tanpa @.
+     */
+    tiktok?: string | null;
+    /**
+     * URL lengkap channel.
+     */
+    youtube?: string | null;
+    /**
+     * URL lengkap halaman.
+     */
+    linkedin?: string | null;
+    email?: string | null;
+  };
+  statistik?:
+    | {
+        /**
+         * Contoh: Anggota Aktif, Kegiatan Tahun Ini.
+         */
+        label: string;
+        /**
+         * Angka saja.
+         */
+        nilai: number;
+        /**
+         * Opsional, ditempel di belakang angka. Contoh: + atau %.
+         */
+        akhiran?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
@@ -1949,6 +2099,32 @@ export interface FooterSelect<T extends boolean = true> {
               url?: T;
               label?: T;
             };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  sosial?:
+    | T
+    | {
+        instagram?: T;
+        tiktok?: T;
+        youtube?: T;
+        linkedin?: T;
+        email?: T;
+      };
+  statistik?:
+    | T
+    | {
+        label?: T;
+        nilai?: T;
+        akhiran?: T;
         id?: T;
       };
   updatedAt?: T;

@@ -28,7 +28,14 @@ import {
 import { slugField } from 'payload'
 
 export const Posts: CollectionConfig<'posts'> = {
+  // Slug tetap 'posts' — rute /posts, sitemap, dan plugin search bawaan
+  // template sudah menunjuk ke sini. Yang diubah cuma labelnya, supaya
+  // pengurus melihat "Berita" di panel admin.
   slug: 'posts',
+  labels: {
+    singular: 'Berita',
+    plural: 'Berita',
+  },
   access: {
     create: authenticated,
     delete: authenticated,
@@ -128,6 +135,21 @@ export const Posts: CollectionConfig<'posts'> = {
               },
               hasMany: true,
               relationTo: 'categories',
+            },
+            {
+              name: 'link_eksternal',
+              type: 'text',
+              label: 'Link Eksternal',
+              admin: {
+                description:
+                  'Khusus berita Oprec: URL Google Form pendaftaran. Kalau diisi, tombol pendaftaran tampil di halaman berita.',
+              },
+              validate: (value: string | null | undefined) => {
+                if (!value) return true
+                return /^https?:\/\//.test(value)
+                  ? true
+                  : 'Link harus diawali http:// atau https://'
+              },
             },
           ],
           label: 'Meta',

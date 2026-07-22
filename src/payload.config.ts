@@ -4,9 +4,11 @@ import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
+import { Aspirasi } from './collections/Aspirasi'
 import { Categories } from './collections/Categories'
 import { Divisi } from './collections/Divisi'
 import { Events } from './collections/Events'
+import { Faq } from './collections/Faq'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Pengurus } from './collections/Pengurus'
@@ -14,6 +16,7 @@ import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
+import { SiteSettings } from './SiteSettings/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
@@ -27,9 +30,11 @@ export default buildConfig({
       // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
       // Feel free to delete this at any time. Simply remove the line below.
       beforeLogin: ['@/components/BeforeLogin'],
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
-      beforeDashboard: ['@/components/BeforeDashboard'],
+      // Blok 'welcome' bawaan template sengaja dihapus: di dalamnya ada tombol
+      // "Seed your database" yang menghapus isi categories, media, pages,
+      // posts, forms, form-submissions, dan search lalu menggantinya dengan
+      // konten demo Payload. Satu klik tak sengaja bisa menghapus media
+      // (foto pengurus & thumbnail kegiatan) beserta relasinya.
     },
     importMap: {
       baseDir: path.resolve(dirname),
@@ -65,9 +70,20 @@ export default buildConfig({
       url: process.env.DATABASE_URL || '',
     },
   }),
-  collections: [Pages, Posts, Events, Pengurus, Divisi, Media, Categories, Users],
+  collections: [
+    Pages,
+    Posts,
+    Events,
+    Pengurus,
+    Divisi,
+    Faq,
+    Aspirasi,
+    Media,
+    Categories,
+    Users,
+  ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Header, Footer],
+  globals: [Header, Footer, SiteSettings],
   plugins,
   secret: process.env.PAYLOAD_SECRET,
   sharp,
