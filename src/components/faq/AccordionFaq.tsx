@@ -48,6 +48,4 @@ export const AccordionFaq: React.FC<{ faq: Faq[]; ringkas?: boolean }> = ({
 )
 
 /** Versi teks polos untuk blok ringkas di beranda. */
-const RichTextPolos: React.FC<{ data: Faq['jawaban'] }> = ({ data }) => (
-  <p>{ambilTeks(data)}</p>
-)
+const RichTextPolos: React.FC<{ data: Faq['jawaban'] }> = ({ data }) => <p>{ambilTeks(data)}</p>

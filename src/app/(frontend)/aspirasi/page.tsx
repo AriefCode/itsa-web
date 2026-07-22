@@ -70,11 +70,11 @@ export default async function AspirasiPage() {
                 {docs.map((a) => (
                   <li key={a.id} className="overflow-hidden rounded-lg bg-cream text-forest">
                     <div className="p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-olive">
+                      <p className="font-aksen text-xs font-medium uppercase tracking-[0.16em] text-olive">
                         Aspirasi warga
                       </p>
                       <p className="mt-2 leading-relaxed">{a.isi}</p>
-                      <p className="mt-3 text-xs text-olive">
+                      <p className="mt-3 font-aksen text-xs tracking-wide text-olive">
                         {new Date(a.createdAt).toLocaleDateString('id-ID', {
                           day: 'numeric',
                           month: 'long',
@@ -83,9 +83,10 @@ export default async function AspirasiPage() {
                       </p>
                     </div>
 
-                    {(a.respon_komentar || (a.respon_foto && typeof a.respon_foto === 'object')) && (
+                    {(a.respon_komentar ||
+                      (a.respon_foto && typeof a.respon_foto === 'object')) && (
                       <div className="border-t border-olive/25 bg-olive/10 p-5">
-                        <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-olive">
+                        <p className="flex items-center gap-2 font-aksen text-xs font-medium uppercase tracking-[0.16em] text-olive">
                           <MessageSquareQuote className="size-3.5" aria-hidden />
                           Tanggapan pengurus
                         </p>

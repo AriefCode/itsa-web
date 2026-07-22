@@ -38,7 +38,10 @@ export const KegiatanMendatang: React.FC<{ events: Event[] }> = ({ events }) => 
       <span id="kegiatan-mendatang" className="sr-only">
         Kegiatan mendatang
       </span>
-      <KepalaSeksi judul="Kegiatan Mendatang" tautan={{ label: 'Semua kegiatan', href: '/kegiatan' }} />
+      <KepalaSeksi
+        judul="Kegiatan Mendatang"
+        tautan={{ label: 'Semua kegiatan', href: '/kegiatan' }}
+      />
 
       <div className="mt-8">
         {events.length === 0 ? (
@@ -72,7 +75,10 @@ export const RecapTerbaru: React.FC<{ events: Event[] }> = ({ events }) => {
         <span id="recap-terbaru" className="sr-only">
           Recap kegiatan terbaru
         </span>
-        <KepalaSeksi judul="Recap Terbaru" tautan={{ label: 'Arsip kegiatan', href: '/kegiatan' }} />
+        <KepalaSeksi
+          judul="Recap Terbaru"
+          tautan={{ label: 'Arsip kegiatan', href: '/kegiatan' }}
+        />
 
         <div className="mt-8">
           {!utama ? (
@@ -132,8 +138,7 @@ export const CtaAspirasi: React.FC = () => (
       <div>
         <h2 className="font-heading text-2xl font-bold sm:text-3xl">Punya masukan untuk ITSA?</h2>
         <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-olive">
-          Kirim aspirasimu secara anonim. Pengurus membaca dan menanggapi setiap masukan yang
-          masuk.
+          Kirim aspirasimu secara anonim. Pengurus membaca dan menanggapi setiap masukan yang masuk.
         </p>
       </div>
       <Link

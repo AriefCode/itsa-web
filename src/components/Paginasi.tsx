@@ -30,7 +30,10 @@ export const Paginasi: React.FC<{
   return (
     <nav className="mt-12 flex items-center justify-center gap-2" aria-label="Halaman kabinet">
       {halaman > 1 ? (
-        <Link href={buatHref(halaman - 1)} className={`${gaya} border border-forest-line text-cream hover:bg-forest-elevated`}>
+        <Link
+          href={buatHref(halaman - 1)}
+          className={`${gaya} border border-forest-line text-cream hover:bg-forest-elevated`}
+        >
           <span className="sr-only">Halaman sebelumnya</span>
           <ChevronLeft className="size-4" aria-hidden />
         </Link>
@@ -61,7 +64,10 @@ export const Paginasi: React.FC<{
       )}
 
       {halaman < totalHalaman ? (
-        <Link href={buatHref(halaman + 1)} className={`${gaya} border border-forest-line text-cream hover:bg-forest-elevated`}>
+        <Link
+          href={buatHref(halaman + 1)}
+          className={`${gaya} border border-forest-line text-cream hover:bg-forest-elevated`}
+        >
           <span className="sr-only">Halaman berikutnya</span>
           <ChevronRight className="size-4" aria-hidden />
         </Link>

@@ -6,6 +6,20 @@ Acuan visual untuk website ITSA. Dibaca bareng `CLAUDE.md` (struktur, data, renc
 
 ---
 
+## 0. DNA visual ITS (elemen khas — WAJIB, ini pembeda utama)
+Tanpa elemen ini, situs jatuh jadi layout Hima generik/informatif (mirip Udayana). Ambil **struktur & gerakannya** dari HMTC ITS, warna tetap palet hijau kita.
+- **Single-page yang penuh gerakan:** halaman panjang di-scroll, tiap section muncul dengan animasi (fade/slide-in saat masuk viewport). BUKAN halaman statis yang diam.
+- **Splash intro** dengan loading counter (angka % naik) sebelum masuk.
+- **Hero full-bleed, headline BESAR & berani** (multi-baris, tipografi gede) — bukan hero mungil.
+- **Stat counter beranimasi** (angka count-up) di band tersendiri.
+- **Section pengurus INTERAKTIF:** carousel/slider per divisi, kartu foto besar yang nge-link ke sosial. Ini pembeda paling kuat — **bukan grid kartu statis**.
+- **Timeline horizontal** untuk sejarah/kegiatan, bukan list vertikal biasa.
+- **Micro-interaction:** hover state, transisi halus, scroll-triggered reveal.
+
+**Anti-pattern (yang bikin kayak Udayana — HINDARI):** grid kartu divisi statis dengan ikon SVG kecil; layout terang-informatif yang "diam"; section yang cuma tumpukan kartu tanpa gerakan atau hierarki kuat; hero kecil tanpa dampak.
+
+---
+
 ## 1. Prinsip
 1. **70 / 20 / 10.** 70% hijau (dominan), 20% cream (sekunder), 10% gold (aksen). Patuhi rasio ini di tiap halaman.
 2. **Kontras benar.** Latar gelap → teks terang. Latar terang → teks gelap. Jangan dibalik.
@@ -43,6 +57,7 @@ Palet resmi (dari `palet_itsa.jpeg`), dipakai dengan rasio 70/20/10.
 Semua dari Google Fonts (mudah diintegrasi via `next/font`).
 - **Heading:** Plus Jakarta Sans (bobot 600–800).
 - **Body:** Inter (bobot 400–500).
+- **Aksen mono (sentuhan tech):** **JetBrains Mono** — HANYA untuk elemen kecil bernuansa teknis: eyebrow/label section, angka stat counter, tag/chip kategori, timestamp, elemen "kode". JANGAN untuk heading atau body. Pakai versi biasa dari Google Fonts, **BUKAN varian "Nerd Font"** (itu buat terminal — berat & penuh ikon, tak perlu di web).
 - **Alternatif heading** kalau mau lebih tech: Space Grotesk.
 - Skala (desktop): H1 48–56 / H2 32–40 / H3 24 / Body 16–18 / Small 14. Line-height body ~1.6, heading ~1.2. Lebar teks ~65–75 karakter.
 

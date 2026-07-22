@@ -52,13 +52,13 @@ export const KartuBerita: React.FC<{ post: Post }> = ({ post }) => {
           {kategori.map((c) => (
             <span
               key={c.id}
-              className="rounded bg-forest px-2 py-0.5 text-xs font-medium text-cream"
+              className="rounded bg-forest px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-cream"
             >
               {c.title}
             </span>
           ))}
           {post.link_eksternal && (
-            <span className="inline-flex items-center gap-1 rounded bg-gold px-2 py-0.5 text-xs font-semibold text-forest">
+            <span className="inline-flex items-center gap-1 rounded bg-gold px-2 py-0.5 font-aksen text-[11px] font-bold tracking-wider text-forest">
               Pendaftaran
               <ExternalLink className="size-3" aria-hidden />
             </span>
@@ -69,7 +69,9 @@ export const KartuBerita: React.FC<{ post: Post }> = ({ post }) => {
 
         {cuplikan && <p className="mt-2 text-sm leading-relaxed text-olive">{cuplikan}</p>}
 
-        {tanggal && <p className="mt-auto pt-4 text-sm text-olive">{tanggal}</p>}
+        {tanggal && (
+          <p className="mt-auto pt-4 font-aksen text-xs tracking-wide text-olive">{tanggal}</p>
+        )}
       </div>
     </Link>
   )

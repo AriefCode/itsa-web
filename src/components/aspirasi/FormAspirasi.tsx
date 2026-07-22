@@ -122,7 +122,10 @@ export const FormAspirasi: React.FC = () => {
 
       {/* Honeypot: bukan untuk manusia. Disembunyikan di luar layar, dijauhkan
           dari urutan tab, dan diberi tahu pembaca layar untuk mengabaikannya. */}
-      <div aria-hidden className="pointer-events-none absolute left-[-9999px] h-0 w-0 overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-[-9999px] h-0 w-0 overflow-hidden"
+      >
         <label htmlFor="website-aspirasi">Jangan diisi</label>
         <input
           ref={honeypotRef}

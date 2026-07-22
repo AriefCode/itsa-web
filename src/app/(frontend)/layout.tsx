@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { cn } from '@/utilities/ui'
 import { GeistMono } from 'geist/font/mono'
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google'
 import React from 'react'
 
 // Tipografi — DESIGN.md §3. Heading: Plus Jakarta Sans (600–800),
@@ -18,6 +18,17 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['600', '700', '800'],
   variable: '--font-jakarta',
+  display: 'swap',
+})
+
+// Aksen mono (DESIGN.md §3). Versi biasa dari Google Fonts, BUKAN varian
+// "Nerd Font" yang penuh ikon terminal dan jauh lebih berat.
+// Dipakai TERBATAS pada: label/eyebrow section, angka stat counter, tag
+// kategori, dan timestamp. Bukan untuk heading maupun body.
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-jetbrains',
   display: 'swap',
 })
 
@@ -37,7 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html
-      className={cn(inter.variable, jakarta.variable, GeistMono.variable)}
+      className={cn(inter.variable, jakarta.variable, jetbrains.variable, GeistMono.variable)}
       lang="id"
       suppressHydrationWarning
     >

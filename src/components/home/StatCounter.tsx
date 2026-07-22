@@ -97,10 +97,15 @@ export const StatCounter: React.FC<{ statistik: Statistik[] }> = ({ statistik })
           <dl className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {statistik.map((s, i) => (
               <div key={s.id ?? i} className="border-t-2 border-gold pt-5">
-                <dt className="font-heading text-4xl font-extrabold leading-none sm:text-5xl">
+                {/* Angka pakai font aksen mono (DESIGN.md §3): lebar tiap digit
+                    sama, jadi angka tidak bergeser-geser selama animasi
+                    count-up. */}
+                <dt className="font-aksen text-4xl font-bold leading-none tabular-nums sm:text-5xl">
                   <AngkaNaik nilai={s.nilai} akhiran={s.akhiran} />
                 </dt>
-                <dd className="mt-2 text-sm text-olive">{s.label}</dd>
+                <dd className="mt-2 font-aksen text-xs uppercase tracking-[0.14em] text-olive">
+                  {s.label}
+                </dd>
               </div>
             ))}
           </dl>

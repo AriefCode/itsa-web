@@ -55,19 +55,21 @@ export const KartuKegiatan: React.FC<{
           <span
             className={
               selesai
-                ? 'rounded bg-forest px-2 py-0.5 text-xs font-medium text-cream'
-                : 'rounded border border-olive px-2 py-0.5 text-xs font-medium text-olive'
+                ? 'rounded bg-forest px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-cream'
+                : 'rounded border border-olive px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-olive'
             }
           >
             {selesai ? 'Selesai' : 'Akan Datang'}
           </span>
           {!event.gratis && typeof event.htm === 'number' && (
-            <span className="rounded bg-gold px-2 py-0.5 text-xs font-semibold text-forest">
+            <span className="rounded bg-gold px-2 py-0.5 font-aksen text-[11px] font-bold tracking-wider text-forest">
               Rp{event.htm.toLocaleString('id-ID')}
             </span>
           )}
           {event.gratis && (
-            <span className="text-xs font-medium text-olive">Gratis</span>
+            <span className="font-aksen text-[11px] font-medium uppercase tracking-wider text-olive">
+              Gratis
+            </span>
           )}
         </div>
 
@@ -95,7 +97,7 @@ export const KartuKegiatan: React.FC<{
           {tanggal && (
             <p className="flex items-center gap-2">
               <CalendarDays className="size-4 shrink-0" aria-hidden />
-              {tanggal}
+              <span className="font-aksen text-xs tracking-wide">{tanggal}</span>
             </p>
           )}
           {event.lokasi && (

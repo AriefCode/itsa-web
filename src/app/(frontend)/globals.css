@@ -57,6 +57,9 @@
   /* Tipografi — DESIGN.md §3 */
   --font-sans: var(--font-inter);
   --font-heading: var(--font-jakarta);
+  /* Aksen mono: hanya untuk label section, angka statistik, tag kategori,
+   * dan timestamp. Jangan dipakai untuk heading atau body. */
+  --font-aksen: var(--font-jetbrains);
   --font-mono: var(--font-geist-mono);
 
   /* ---------------------------------------------------------------

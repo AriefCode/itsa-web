@@ -99,11 +99,7 @@ export const KegiatanBrowser: React.FC<{ events: Event[] }> = ({ events }) => {
       </p>
 
       <div className="mt-6">
-        {tampilan === 'timeline' ? (
-          <Timeline events={urut} />
-        ) : (
-          <Kalender events={tersaring} />
-        )}
+        {tampilan === 'timeline' ? <Timeline events={urut} /> : <Kalender events={tersaring} />}
       </div>
     </div>
   )

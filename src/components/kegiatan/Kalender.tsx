@@ -5,7 +5,13 @@ import React, { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
-import { formatRentang, hariTerpakai, kunciHari, namaBulan, sudahSelesai } from '@/utilities/kegiatan'
+import {
+  formatRentang,
+  hariTerpakai,
+  kunciHari,
+  namaBulan,
+  sudahSelesai,
+} from '@/utilities/kegiatan'
 
 const HARI = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
 
@@ -144,9 +150,7 @@ export const Kalender: React.FC<{ events: Event[] }> = ({ events }) => {
                 ].join(' ')}
               >
                 {tgl.getDate()}
-                {punya && (
-                  <span aria-hidden className="mt-1 size-1.5 rounded-full bg-gold" />
-                )}
+                {punya && <span aria-hidden className="mt-1 size-1.5 rounded-full bg-gold" />}
               </button>
             )
           })}

@@ -47,7 +47,7 @@ export const Timeline: React.FC<{ events: Event[] }> = ({ events }) => {
     <div className="space-y-10">
       {kelompok.map((g) => (
         <section key={g.kunci} aria-label={g.judul}>
-          <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-mist">
+          <h2 className="font-aksen text-xs font-medium uppercase tracking-[0.18em] text-mist">
             {g.judul}
           </h2>
 
@@ -91,17 +91,19 @@ export const Timeline: React.FC<{ events: Event[] }> = ({ events }) => {
                           <span
                             className={
                               selesai
-                                ? 'rounded bg-forest px-2 py-0.5 text-xs font-medium text-cream'
-                                : 'rounded border border-olive px-2 py-0.5 text-xs font-medium text-olive'
+                                ? 'rounded bg-forest px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-cream'
+                                : 'rounded border border-olive px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-olive'
                             }
                           >
                             {selesai ? 'Selesai' : 'Akan Datang'}
                           </span>
                           {e.gratis ? (
-                            <span className="text-xs font-medium text-olive">Gratis</span>
+                            <span className="font-aksen text-[11px] font-medium uppercase tracking-wider text-olive">
+                              Gratis
+                            </span>
                           ) : (
                             typeof e.htm === 'number' && (
-                              <span className="rounded bg-gold px-2 py-0.5 text-xs font-semibold text-forest">
+                              <span className="rounded bg-gold px-2 py-0.5 font-aksen text-[11px] font-bold tracking-wider text-forest">
                                 Rp{e.htm.toLocaleString('id-ID')}
                               </span>
                             )
@@ -118,7 +120,9 @@ export const Timeline: React.FC<{ events: Event[] }> = ({ events }) => {
                         <div className="mt-auto flex flex-wrap gap-x-5 gap-y-1.5 pt-3 text-sm text-olive">
                           <span className="flex items-center gap-2">
                             <CalendarDays className="size-4 shrink-0" aria-hidden />
-                            {formatRentang(e.tanggal_mulai, e.tanggal_selesai)}
+                            <span className="font-aksen text-xs tracking-wide">
+                              {formatRentang(e.tanggal_mulai, e.tanggal_selesai)}
+                            </span>
                           </span>
                           {e.lokasi && (
                             <span className="flex items-center gap-2">
