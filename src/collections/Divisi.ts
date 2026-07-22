@@ -31,10 +31,17 @@ export const Divisi: CollectionConfig<'divisi'> = {
   },
   defaultSort: 'urutan',
   // Dipakai saat Divisi direferensikan dari Pengurus/Kegiatan, supaya frontend
-  // dapat nama & slug tanpa perlu query tambahan.
+  // dapat datanya tanpa query tambahan.
+  //
+  // `urutan` dan `deskripsi_singkat` WAJIB ada di sini: halaman Kabinet
+  // mengurutkan divisi memakai `urutan` dan menampilkan deskripsinya. Tanpa
+  // keduanya, relasi divisi hanya membawa nama, deskripsi divisi hilang tanpa
+  // pesan error, dan urutannya diam-diam jatuh ke alfabetis.
   defaultPopulate: {
     nama: true,
     slug: true,
+    urutan: true,
+    deskripsi_singkat: true,
   },
   fields: [
     {
