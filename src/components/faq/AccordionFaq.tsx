@@ -27,7 +27,15 @@ export const AccordionFaq: React.FC<{ faq: Faq[]; ringkas?: boolean }> = ({
             className="relative size-4 shrink-0 before:absolute before:left-0 before:top-1/2 before:h-0.5 before:w-4 before:-translate-y-1/2 before:bg-gold after:absolute after:left-1/2 after:top-0 after:h-4 after:w-0.5 after:-translate-x-1/2 after:bg-gold after:transition-transform group-open:after:rotate-90 group-open:after:opacity-0"
           />
         </summary>
-        <div className="max-w-[75ch] pb-5 text-sm leading-relaxed text-mist">
+        {/* Jawaban rata kiri-kanan dan memakai lebar penuh kotaknya, supaya
+            tidak ada ruang kosong menggantung di sisi kanan.
+
+            `hyphens-auto` penting di sini: tanpa pemenggalan kata, teks rata
+            kanan-kiri memaksa spasi antar kata melebar tidak merata dan
+            memunculkan "sungai" celah putih di tengah paragraf. Bahasa
+            Indonesia banyak kata panjang, jadi efeknya terasa. Pemenggalan
+            mengikuti lang="id" yang disetel di layout. */}
+        <div className="hyphens-auto pb-5 text-justify text-sm leading-relaxed text-mist">
           {ringkas ? (
             <RichTextPolos data={f.jawaban} />
           ) : (
