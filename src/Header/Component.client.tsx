@@ -62,10 +62,10 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
       <div className="container flex h-16 items-center justify-between gap-4">
         <Link
           href="/"
-          className="rounded-lg text-cream transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold"
+          className="inline-flex shrink-0 rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold"
           aria-label="ITSA, ke beranda"
         >
-          <Logo />
+          <Logo priority />
         </Link>
 
         {/* Desktop */}
