@@ -818,7 +818,7 @@ export interface Event {
   /**
    * URL folder Google Drive berisi foto/video kegiatan. Pastikan izin akses sudah "anyone with the link".
    */
-  linkDokumentasi?: string | null;
+  link_dokumentasi?: string | null;
   /**
    * Ringkasan setelah kegiatan selesai. Tampil di halaman detail dan blok recap di Home.
    */
@@ -838,14 +838,14 @@ export interface Event {
     [k: string]: unknown;
   } | null;
   /**
-   * Diatur manual. Ingat mengubahnya jadi "Selesai" setelah kegiatan lewat, kalau tidak kegiatan lama akan terus tampil sebagai akan datang.
+   * Dihitung otomatis dari tanggal. Tidak perlu (dan tidak bisa) diubah manual.
    */
-  status: 'upcoming' | 'completed';
-  tanggalMulai: string;
+  status?: string | null;
+  tanggal_mulai: string;
   /**
    * Kosongkan kalau kegiatan hanya satu hari.
    */
-  tanggalSelesai?: string | null;
+  tanggal_selesai?: string | null;
   divisi: number | Divisi;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
@@ -868,7 +868,7 @@ export interface Divisi {
   /**
    * Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet.
    */
-  deskripsiSingkat: string;
+  deskripsi_singkat: string;
   /**
    * Angka kecil tampil lebih dulu. Divisi inti biasanya 1, 2, 3, ...
    */
@@ -1392,11 +1392,11 @@ export interface EventsSelect<T extends boolean = true> {
   gratis?: T;
   htm?: T;
   deskripsi?: T;
-  linkDokumentasi?: T;
+  link_dokumentasi?: T;
   recap?: T;
   status?: T;
-  tanggalMulai?: T;
-  tanggalSelesai?: T;
+  tanggal_mulai?: T;
+  tanggal_selesai?: T;
   divisi?: T;
   generateSlug?: T;
   slug?: T;
@@ -1432,7 +1432,7 @@ export interface PengurusSelect<T extends boolean = true> {
  */
 export interface DivisiSelect<T extends boolean = true> {
   nama?: T;
-  deskripsiSingkat?: T;
+  deskripsi_singkat?: T;
   urutan?: T;
   generateSlug?: T;
   slug?: T;

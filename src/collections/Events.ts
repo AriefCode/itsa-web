@@ -11,7 +11,30 @@ import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
  * timeline Kegiatan, tampilan Kalender, blok recap di Home, dan halaman
  * detail /kegiatan/[slug]. Jadi field di sini sengaja lengkap — jangan bikin
  * collection terpisah untuk recap.
+ *
+ * CATATAN STATUS: `status` TIDAK disimpan di database. Dia dihitung dari
+ * tanggal setiap kali dibaca, supaya tidak pernah basi gara-gara pengurus
+ * lupa mengubahnya. Konsekuensinya `status` tidak bisa dipakai untuk query
+ * atau sort — frontend memfilter Upcoming/Completed lewat `tanggal_selesai`
+ * (lihat helper `hitungStatus` di bawah).
  */
+
+/**
+ * Kegiatan dianggap selesai kalau tanggal berakhirnya sudah lewat.
+ *
+ * Mengembalikan teks berbahasa Indonesia karena field ini murni untuk dibaca
+ * manusia di panel admin. Frontend JANGAN membandingkan string ini — hitung
+ * sendiri dari tanggal (lihat catatan status di atas), supaya tidak rapuh
+ * kalau kalimatnya diubah.
+ */
+const hitungStatus = (tanggalMulai?: unknown, tanggalSelesai?: unknown): string => {
+  const akhir = tanggalSelesai || tanggalMulai
+  if (!akhir) return 'Akan Datang'
+  const waktu = new Date(akhir as string).getTime()
+  if (Number.isNaN(waktu)) return 'Akan Datang'
+  return waktu < Date.now() ? 'Selesai' : 'Akan Datang'
+}
+
 export const Events: CollectionConfig<'events'> = {
   slug: 'events',
   labels: {
@@ -27,18 +50,18 @@ export const Events: CollectionConfig<'events'> = {
   },
   admin: {
     useAsTitle: 'judul',
-    defaultColumns: ['judul', 'tanggalMulai', 'status', 'lokasi', 'divisi'],
+    defaultColumns: ['judul', 'tanggal_mulai', 'lokasi', 'divisi'],
     description:
       'Kegiatan himpunan. Satu entri dipakai bersama oleh timeline, kalender, dan halaman detail.',
   },
   // Terbaru dulu, supaya kegiatan yang relevan ada di atas daftar admin.
-  defaultSort: '-tanggalMulai',
+  defaultSort: '-tanggal_mulai',
   // Dipakai saat Event direferensikan dari tempat lain (mis. blok recap Home).
   defaultPopulate: {
     judul: true,
     slug: true,
-    tanggalMulai: true,
-    status: true,
+    tanggal_mulai: true,
+    tanggal_selesai: true,
     thumbnail: true,
     lokasi: true,
     gratis: true,
@@ -95,8 +118,6 @@ export const Events: CollectionConfig<'events'> = {
                   admin: {
                     width: '50%',
                     step: 1000,
-                    // Pola yang sama dengan tab Dokumentasi & Recap: field baru
-                    // muncul kalau memang relevan.
                     condition: (data) => data?.gratis === false,
                     description: 'Harga tiket masuk per peserta, angka saja tanpa titik.',
                   },
@@ -121,16 +142,21 @@ export const Events: CollectionConfig<'events'> = {
         },
         {
           label: 'Dokumentasi & Recap',
-          // Field di tab ini baru relevan setelah kegiatan selesai.
+          // Field di tab ini muncul sendiri begitu tanggal kegiatan sudah lewat.
+          // Kondisinya menghitung ulang dari tanggal (bukan dari field status)
+          // karena status tidak lagi disimpan.
           fields: [
             {
-              name: 'linkDokumentasi',
+              name: 'link_dokumentasi',
               type: 'text',
               label: 'Link Dokumentasi (Google Drive)',
               admin: {
                 description:
                   'URL folder Google Drive berisi foto/video kegiatan. Pastikan izin akses sudah "anyone with the link".',
-                condition: (data) => data?.status === 'completed',
+                condition: (data) => {
+                  const akhir = data?.tanggal_selesai || data?.tanggal_mulai
+                  return akhir ? new Date(akhir).getTime() < Date.now() : false
+                },
               },
               validate: (value: string | null | undefined) => {
                 if (!value) return true
@@ -146,7 +172,10 @@ export const Events: CollectionConfig<'events'> = {
               admin: {
                 description:
                   'Ringkasan setelah kegiatan selesai. Tampil di halaman detail dan blok recap di Home.',
-                condition: (data) => data?.status === 'completed',
+                condition: (data) => {
+                  const akhir = data?.tanggal_selesai || data?.tanggal_mulai
+                  return akhir ? new Date(akhir).getTime() < Date.now() : false
+                },
               },
             },
           ],
@@ -154,23 +183,23 @@ export const Events: CollectionConfig<'events'> = {
       ],
     },
     {
+      // Virtual: dihitung saat dibaca, tidak pernah tersimpan. Lihat catatan
+      // di atas file soal kenapa dan apa konsekuensinya buat query.
       name: 'status',
-      type: 'select',
-      required: true,
-      defaultValue: 'upcoming',
+      type: 'text',
+      virtual: true,
       label: 'Status',
-      options: [
-        { label: 'Akan Datang', value: 'upcoming' },
-        { label: 'Selesai', value: 'completed' },
-      ],
       admin: {
         position: 'sidebar',
-        description:
-          'Diatur manual. Ingat mengubahnya jadi "Selesai" setelah kegiatan lewat, kalau tidak kegiatan lama akan terus tampil sebagai akan datang.',
+        readOnly: true,
+        description: 'Dihitung otomatis dari tanggal. Tidak perlu (dan tidak bisa) diubah manual.',
+      },
+      hooks: {
+        afterRead: [({ data }) => hitungStatus(data?.tanggal_mulai, data?.tanggal_selesai)],
       },
     },
     {
-      name: 'tanggalMulai',
+      name: 'tanggal_mulai',
       type: 'date',
       required: true,
       label: 'Tanggal Mulai',
@@ -180,7 +209,7 @@ export const Events: CollectionConfig<'events'> = {
       },
     },
     {
-      name: 'tanggalSelesai',
+      name: 'tanggal_selesai',
       type: 'date',
       label: 'Tanggal Selesai',
       admin: {
@@ -189,7 +218,7 @@ export const Events: CollectionConfig<'events'> = {
         description: 'Kosongkan kalau kegiatan hanya satu hari.',
       },
       validate: (value: unknown, { siblingData }: { siblingData: Record<string, unknown> }) => {
-        const mulai = siblingData?.tanggalMulai
+        const mulai = siblingData?.tanggal_mulai
         if (!value || !mulai) return true
         return new Date(value as string) >= new Date(mulai as string)
           ? true
@@ -206,7 +235,23 @@ export const Events: CollectionConfig<'events'> = {
         position: 'sidebar',
       },
     },
-    slugField({ useAsSlug: 'judul' }),
+    slugField({
+      useAsSlug: 'judul',
+      // Tahun ikut masuk ke slug supaya kegiatan tahunan yang judulnya sama
+      // ("Workshop Git" 2026 & 2027) tidak bentrok di index unik.
+      slugify: ({ data, valueToSlugify }) => {
+        const dasar = String(valueToSlugify ?? data?.judul ?? '')
+          .toLowerCase()
+          .trim()
+          .replace(/&/g, ' dan ')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+        if (!dasar) return dasar
+        const mulai = data?.tanggal_mulai
+        const tahun = mulai ? new Date(mulai as string).getFullYear() : null
+        return tahun && !Number.isNaN(tahun) ? `${dasar}-${tahun}` : dasar
+      },
+    }),
   ],
   versions: {
     drafts: true,

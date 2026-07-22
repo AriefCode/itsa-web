@@ -44,7 +44,7 @@ export const Divisi: CollectionConfig<'divisi'> = {
       label: 'Nama Divisi',
     },
     {
-      name: 'deskripsiSingkat',
+      name: 'deskripsi_singkat',
       type: 'textarea',
       required: true,
       label: 'Deskripsi Singkat',
