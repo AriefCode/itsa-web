@@ -29,17 +29,16 @@ export const KegiatanBrowser: React.FC<{ events: Event[] }> = ({ events }) => {
 
   const tersaring = useMemo(() => saring(events, filter), [events, filter])
 
-  // Timeline: yang akan datang diurutkan dari yang paling dekat, yang sudah
-  // selesai dari yang paling baru. Keduanya menaruh hal paling relevan di atas.
-  const urut = useMemo(() => {
-    const salinan = [...tersaring]
-    salinan.sort((a, b) => {
-      const wa = new Date(a.tanggal_mulai).getTime()
-      const wb = new Date(b.tanggal_mulai).getTime()
-      return filter === 'mendatang' ? wa - wb : wb - wa
-    })
-    return salinan
-  }, [tersaring, filter])
+  // Selalu urut maju: sebuah timeline dibaca dari atas ke bawah mengikuti
+  // waktu, bukan terbalik. Supaya pengunjung tetap gampang menemukan posisi
+  // "sekarang" di antara kegiatan lama, Timeline menyisipkan penanda pemisah.
+  const urut = useMemo(
+    () =>
+      [...tersaring].sort(
+        (a, b) => new Date(a.tanggal_mulai).getTime() - new Date(b.tanggal_mulai).getTime(),
+      ),
+    [tersaring],
+  )
 
   return (
     <div>
