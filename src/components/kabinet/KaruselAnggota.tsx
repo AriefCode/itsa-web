@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import type { Pengurus } from '@/payload-types'
 import { KartuPengurus } from './KartuPengurus'
-import { PANAH, TREK, useGeserMendatar } from './useGeserMendatar'
+import { PANAH, useGeserMendatar } from './useGeserMendatar'
 
 /**
  * Carousel anggota divisi.
@@ -23,19 +23,14 @@ export const KaruselAnggota: React.FC<{
   onBuka: (pengurus: Pengurus) => void
   label: string
 }> = ({ anggota, onBuka, label }) => {
-  const { trekRef, aktif, bisaMundur, bisaMaju, perbarui, geser, keIndeks } = useGeserMendatar(
+  const { propsTrek, aktif, bisaMundur, bisaMaju, geser, keIndeks } = useGeserMendatar(
     anggota.length,
     anggota,
   )
 
   return (
     <div>
-      <ul
-        ref={trekRef}
-        onScroll={perbarui}
-        aria-label={label}
-        className={`${TREK} snap-mandatory`}
-      >
+      <ul {...propsTrek} className={`${propsTrek.className} snap-mandatory`} aria-label={label}>
         {anggota.map((p, i) => (
           <li
             key={p.id}

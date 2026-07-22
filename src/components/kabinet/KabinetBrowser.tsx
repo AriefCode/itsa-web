@@ -8,7 +8,7 @@ import { Media } from '@/components/Media'
 import { KartuPengurus } from './KartuPengurus'
 import { KaruselAnggota } from './KaruselAnggota'
 import { ModalPengurus } from './ModalPengurus'
-import { PANAH, TREK, useGeserMendatar } from './useGeserMendatar'
+import { PANAH, useGeserMendatar } from './useGeserMendatar'
 
 export type Kelompok = { divisi: Divisi; anggota: Pengurus[] }
 
@@ -47,10 +47,9 @@ export const KabinetBrowser: React.FC<{ kelompok: Kelompok[] }> = ({ kelompok })
   const [profil, setProfil] = useState<Pengurus | null>(null)
 
   const {
-    trekRef: trekDivisi,
+    propsTrek: propsTrekDivisi,
     bisaMundur: divisiBisaMundur,
     bisaMaju: divisiBisaMaju,
-    perbarui: perbaruiDivisi,
     geser: geserDivisi,
   } = useGeserMendatar(kelompok.length, kelompok)
 
@@ -131,7 +130,7 @@ export const KabinetBrowser: React.FC<{ kelompok: Kelompok[] }> = ({ kelompok })
           jadi grid di layar lebar. Grid enam kolom rapi selama divisinya pas
           enam; begitu himpunan menambah divisi ketujuh, barisnya pecah dan
           divisi baru itu terlempar ke bawah di luar pandangan. */}
-      <ul ref={trekDivisi} onScroll={perbaruiDivisi} className={`${TREK} mt-7`}>
+      <ul {...propsTrekDivisi} className={`${propsTrekDivisi.className} mt-7`}>
         {kelompok.map((k) => {
           const dipilih = !sedangMencari && k.divisi.id === aktif?.divisi.id
           return (
