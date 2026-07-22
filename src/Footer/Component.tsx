@@ -47,7 +47,7 @@ export async function Footer() {
 
   return (
     <footer className="mt-auto border-t border-forest-line bg-forest-deep text-cream">
-      <div className="container grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="container grid gap-x-8 gap-y-10 py-10 sm:grid-cols-2 sm:py-12 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <Link
             href="/"
@@ -66,7 +66,7 @@ export async function Footer() {
           <h2 id="footer-navigasi" className="font-heading text-sm font-bold text-cream">
             Navigasi
           </h2>
-          <ul className="mt-4 space-y-2.5">
+          <ul className="mt-3 space-y-1.5">
             {nav.map((item) => (
               <li key={item.url}>
                 <Link
@@ -86,7 +86,7 @@ export async function Footer() {
           {adaKontak && (
             <>
               <h2 className="font-heading text-sm font-bold text-cream">Kontak</h2>
-              <div className="mt-4 space-y-2.5 text-sm text-mist">
+              <div className="mt-3 space-y-1.5 text-sm text-mist">
                 {footerData?.kontak?.alamat && (
                   <p className="max-w-[30ch] leading-relaxed">{footerData.kontak.alamat}</p>
                 )}

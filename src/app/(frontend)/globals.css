@@ -83,6 +83,11 @@
 
   /* Sekunder (~20%) */
   --color-cream: #fff7e6; /* section terang + teks utama di atas hijau */
+  /* Kartu di ATAS band cream. Cream saja tidak cukup: kartu jadi tak terlihat
+   * karena warnanya sama persis dengan latarnya. Nilai ini turunan cream yang
+   * dinaikkan sedikit terangnya (bukan putih murni) supaya kartunya terbaca
+   * tanpa keluar dari keluarga warna. */
+  --color-cream-elevated: #fffdf6;
 
   /* Aksen (~10%) — hanya sebagai ISIAN, tidak pernah jadi teks */
   --color-gold: #ffd500;

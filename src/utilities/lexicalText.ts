@@ -13,6 +13,22 @@ export function ambilTeks(node: unknown): string {
   return ''
 }
 
+/**
+ * Memecah rich text jadi daftar paragraf berupa teks polos.
+ *
+ * Dipakai saat isi yang sama perlu ditampilkan sebagai beberapa langkah
+ * (mis. recap kegiatan yang dirender sebagai timeline), bukan sebagai satu
+ * blok. Paragraf kosong dibuang supaya baris kosong di editor tidak jadi
+ * langkah hampa.
+ */
+export function ambilParagraf(node: unknown): string[] {
+  if (!node || typeof node !== 'object') return []
+  const n = node as { root?: { children?: unknown[] }; children?: unknown[] }
+  const anak = n.root?.children ?? n.children
+  if (!Array.isArray(anak)) return []
+  return anak.map((blok) => ambilTeks(blok).replace(/\s+/g, ' ').trim()).filter(Boolean)
+}
+
 /** Memotong teks di batas kata terdekat supaya tidak terputus di tengah kata. */
 export function potongTeks(teks: string, maks: number): string {
   const bersih = teks.replace(/\s+/g, ' ').trim()

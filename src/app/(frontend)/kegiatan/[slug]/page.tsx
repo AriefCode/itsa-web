@@ -1,19 +1,25 @@
 import type { Metadata } from 'next'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 import configPromise from '@payload-config'
 import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import React, { cache } from 'react'
-import { ArrowLeft, CalendarDays, ExternalLink, MapPin, Ticket, Users } from 'lucide-react'
 
+import type { Event, Media as MediaType } from '@/payload-types'
 import RichText from '@/components/RichText'
-import { Media } from '@/components/Media'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
-import { formatJam, formatRentang, sudahSelesai } from '@/utilities/kegiatan'
+import { HeroKegiatan } from '@/components/kegiatan/detail/HeroKegiatan'
+import { SidebarKegiatan } from '@/components/kegiatan/detail/SidebarKegiatan'
+import { SorotanKegiatan } from '@/components/kegiatan/detail/SorotanKegiatan'
+import { DokumentasiKegiatan } from '@/components/kegiatan/detail/DokumentasiKegiatan'
+import { RecapKegiatan } from '@/components/kegiatan/detail/RecapKegiatan'
+import { KegiatanLainnya } from '@/components/kegiatan/detail/KegiatanLainnya'
+import type { Poster } from '@/components/kegiatan/detail/AksiKegiatan'
+import { sudahSelesai } from '@/utilities/kegiatan'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
-import { ambilTeks, potongTeks } from '@/utilities/lexicalText'
+import { getMediaUrl } from '@/utilities/getMediaUrl'
+import { ambilParagraf, ambilTeks, potongTeks } from '@/utilities/lexicalText'
 
 type Args = { params: Promise<{ slug?: string }> }
 
@@ -43,6 +49,41 @@ const ambilKegiatan = cache(async ({ slug }: { slug: string }) => {
   return docs[0] ?? null
 })
 
+/**
+ * Tiga kegiatan lain untuk blok "Kegiatan Lainnya".
+ *
+ * Yang belum lewat didahulukan (itu yang masih bisa diikuti pengunjung), lalu
+ * dilengkapi kegiatan terbaru yang sudah selesai kalau jumlahnya belum cukup.
+ */
+const ambilKegiatanLain = cache(async (idSekarang: number | string) => {
+  const payload = await getPayload({ config: configPromise })
+  const sekarang = new Date().toISOString()
+  const dasar: Where[] = [
+    { id: { not_equals: idSekarang } },
+    { _status: { equals: 'published' } },
+  ]
+
+  const { docs: mendatang } = await payload.find({
+    collection: 'events',
+    depth: 1,
+    limit: 3,
+    sort: 'tanggal_mulai',
+    where: { and: [...dasar, { tanggal_mulai: { greater_than: sekarang } }] },
+  })
+
+  if (mendatang.length >= 3) return mendatang
+
+  const { docs: lampau } = await payload.find({
+    collection: 'events',
+    depth: 1,
+    limit: 3,
+    sort: '-tanggal_mulai',
+    where: { and: [...dasar, { tanggal_mulai: { less_than_equal: sekarang } }] },
+  })
+
+  return [...mendatang, ...lampau].slice(0, 3)
+})
+
 export default async function DetailKegiatan({ params }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = '' } = await params
@@ -50,124 +91,69 @@ export default async function DetailKegiatan({ params }: Args) {
 
   if (!event) notFound()
 
+  const lainnya = await ambilKegiatanLain(event.id)
+
   const selesai = sudahSelesai(event)
-  const jam = formatJam(event.tanggal_mulai)
+  const thumbnail: MediaType | null =
+    event.thumbnail && typeof event.thumbnail === 'object' ? event.thumbnail : null
+
+  // Poster memakai berkas thumbnail itu sendiri — collection Events belum
+  // punya field poster terpisah, jadi ini gambar resmi kegiatan yang tersedia.
+  const poster: Poster = thumbnail?.url
+    ? { href: getMediaUrl(thumbnail.url), namaBerkas: thumbnail.filename || `${event.slug}.jpg` }
+    : null
+
   // Field rich text yang dibuka lalu dikosongkan tetap menyisakan struktur
   // Lexical kosong, jadi keberadaan field saja tidak cukup: cek isi teksnya
   // supaya tidak muncul judul "Recap" yang menggantung tanpa isi.
-  const adaRecap = ambilTeks(event.recap).trim().length > 0
+  const paragrafRecap = selesai ? ambilParagraf(event.recap) : []
+  const linkDokumentasi = selesai ? event.link_dokumentasi : null
 
   return (
     <main>
       {draft && <LivePreviewListener />}
 
-      {/* Kepala: tetap hijau, memberi jeda sebelum area baca terang */}
-      <header className="bg-forest">
-        <div className="container py-12 sm:py-16">
-          <Link
-            href="/kegiatan"
-            className="inline-flex items-center gap-2 rounded text-sm text-mist transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            Semua kegiatan
-          </Link>
-
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span
-              className={
-                selesai
-                  ? 'rounded bg-cream px-2.5 py-1 text-xs font-medium text-forest'
-                  : 'rounded border border-cream/50 px-2.5 py-1 text-xs font-medium text-cream'
-              }
-            >
-              {selesai ? 'Selesai' : 'Akan Datang'}
-            </span>
-            {event.divisi && typeof event.divisi === 'object' && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-mist">
-                <Users className="size-3.5" aria-hidden />
-                {event.divisi.nama}
-              </span>
-            )}
-          </div>
-
-          <h1 className="mt-4 max-w-[24ch] font-heading text-3xl font-extrabold leading-tight tracking-tight text-cream sm:text-4xl lg:text-5xl">
-            {event.judul}
-          </h1>
-
-          <dl className="mt-7 flex flex-wrap gap-x-8 gap-y-3 text-sm text-mist">
-            <div className="flex items-center gap-2">
-              <dt className="sr-only">Tanggal</dt>
-              <CalendarDays className="size-4 shrink-0" aria-hidden />
-              <dd>
-                {formatRentang(event.tanggal_mulai, event.tanggal_selesai)}
-                {jam && !event.tanggal_selesai && `, ${jam} WIB`}
-              </dd>
-            </div>
-            {event.lokasi && (
-              <div className="flex items-center gap-2">
-                <dt className="sr-only">Lokasi</dt>
-                <MapPin className="size-4 shrink-0" aria-hidden />
-                <dd>{event.lokasi}</dd>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <dt className="sr-only">Biaya</dt>
-              <Ticket className="size-4 shrink-0" aria-hidden />
-              <dd>
-                {event.gratis || typeof event.htm !== 'number'
-                  ? 'Gratis'
-                  : `Rp${event.htm.toLocaleString('id-ID')}`}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </header>
-
-      {event.thumbnail && typeof event.thumbnail === 'object' && (
-        <div className="bg-forest">
-          <div className="container pb-12 sm:pb-16">
-            <Media
-              resource={event.thumbnail}
-              imgClassName="aspect-[21/9] w-full rounded-lg object-cover"
-              htmlElement={null}
-              priority
-            />
-          </div>
-        </div>
-      )}
+      <HeroKegiatan event={event} poster={poster} />
 
       {/* Area baca: latar cream, teks forest (DESIGN.md §6) */}
       <div className="bg-cream text-forest">
         <div className="container py-14 sm:py-20">
-          <div className="max-w-[70ch]">
-            <RichText data={event.deskripsi} enableGutter={false} />
-
-            {selesai && event.link_dokumentasi && (
-              <div className="mt-10 border-t border-olive/30 pt-8">
-                <h2 className="font-heading text-lg font-bold">Dokumentasi</h2>
-                <p className="mt-2 text-sm text-olive">
-                  Foto dan video kegiatan tersimpan di Google Drive.
-                </p>
-                <a
-                  href={event.link_dokumentasi}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-gold px-5 py-3 text-sm font-semibold text-forest transition-transform hover:brightness-105 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
+            <div className="space-y-10 lg:col-span-8">
+              <section aria-labelledby="tentang-kegiatan">
+                <span aria-hidden className="block h-1 w-10 rounded-full bg-gold" />
+                <h2
+                  id="tentang-kegiatan"
+                  className="mt-4 font-heading text-2xl font-bold text-forest"
                 >
-                  Buka Dokumentasi
-                  <ExternalLink className="size-4" aria-hidden />
-                </a>
-              </div>
-            )}
-
-            {selesai && adaRecap && event.recap && (
-              <div className="mt-10 border-t border-olive/30 pt-8">
-                <h2 className="font-heading text-lg font-bold">Recap</h2>
-                <div className="mt-4">
-                  <RichText data={event.recap} enableGutter={false} />
+                  Tentang Kegiatan
+                </h2>
+                {/* Panjang baris dijaga di sini saja, bukan dengan mempersempit
+                    seluruh kolom, supaya kartu di bawahnya tetap selebar grid. */}
+                <div className="mt-4 max-w-[68ch] leading-relaxed">
+                  <RichText data={event.deskripsi} enableGutter={false} />
                 </div>
-              </div>
-            )}
+              </section>
+
+              <SorotanKegiatan event={event} />
+
+              {selesai && (
+                <DokumentasiKegiatan
+                  gambar={thumbnail ? [thumbnail] : []}
+                  link={linkDokumentasi}
+                />
+              )}
+
+              <RecapKegiatan paragraf={paragrafRecap} />
+            </div>
+
+            <div className="lg:col-span-4">
+              <SidebarKegiatan event={event} poster={poster} />
+            </div>
+          </div>
+
+          <div className="mt-16 sm:mt-20">
+            <KegiatanLainnya events={lainnya as Event[]} />
           </div>
         </div>
       </div>
