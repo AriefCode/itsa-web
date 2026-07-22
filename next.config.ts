@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
       {
         pathname: '/api/media/file/**',
       },
+      {
+        // Aset brand statis di public/ (logo ITSA). Sengaja dipersempit ke
+        // pola logo saja, bukan mengizinkan seluruh isi public/.
+        pathname: '/logo-*.png',
+      },
     ],
     qualities: [100],
     remotePatterns: [

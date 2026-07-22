@@ -53,7 +53,7 @@ export async function Footer() {
             href="/"
             className="inline-block rounded-lg text-cream focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold"
           >
-            <Logo withSubtitle />
+            <Logo variant="lockup" />
           </Link>
           {footerData?.tentang && (
             <p className="mt-4 max-w-[45ch] text-sm leading-relaxed text-mist">
