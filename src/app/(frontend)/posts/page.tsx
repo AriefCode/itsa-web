@@ -116,6 +116,7 @@ export default async function BeritaPage({ searchParams }: Args) {
               halaman={hasil.page ?? 1}
               totalHalaman={hasil.totalPages}
               buatHref={buatHref}
+              label="Halaman berita"
             />
           </>
         )}

@@ -984,6 +984,14 @@ export interface Faq {
 export interface Aspirasi {
   id: number;
   /**
+   * Ringkasan satu baris. Dipakai sebagai kepala kartu di halaman publik.
+   */
+  judul?: string | null;
+  /**
+   * Topik aspirasi. Dipakai untuk saringan di halaman publik.
+   */
+  kategori?: ('akademik' | 'kegiatan' | 'sarpras' | 'keuangan' | 'informasi' | 'organisasi' | 'lainnya') | null;
+  /**
    * Ditulis oleh pengirim anonim. Ubah hanya untuk menyensor hal yang tidak pantas.
    */
   isi: string;
@@ -1535,6 +1543,8 @@ export interface FaqSelect<T extends boolean = true> {
  * via the `definition` "aspirasi_select".
  */
 export interface AspirasiSelect<T extends boolean = true> {
+  judul?: T;
+  kategori?: T;
   isi?: T;
   status_tampil?: T;
   respon_komentar?: T;

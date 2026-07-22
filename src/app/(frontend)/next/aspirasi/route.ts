@@ -2,6 +2,12 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 
+import {
+  kategoriSah,
+  PANJANG_ISI_MAKSIMUM,
+  PANJANG_JUDUL_MAKSIMUM,
+} from '@/utilities/aspirasi'
+
 /**
  * Penerimaan aspirasi anonim.
  *
@@ -26,7 +32,6 @@ import { headers } from 'next/headers'
 const BATAS_KIRIM = 5
 const JENDELA_MS = 10 * 60 * 1000
 const WAKTU_ISI_MINIMUM_MS = 3000
-const PANJANG_MAKSIMUM = 2000
 
 /**
  * Catatan laju disimpan di memori proses. Cukup untuk satu proses Node seperti
@@ -54,7 +59,13 @@ const lewatBatas = (ip: string): boolean => {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let body: { isi?: unknown; website?: unknown; dibuka?: unknown }
+  let body: {
+    judul?: unknown
+    kategori?: unknown
+    isi?: unknown
+    website?: unknown
+    dibuka?: unknown
+  }
 
   try {
     body = await request.json()
@@ -92,20 +103,39 @@ export async function POST(request: Request): Promise<Response> {
   if (isi.length < 10) {
     return Response.json({ pesan: 'Aspirasi terlalu pendek, minimal 10 karakter.' }, { status: 400 })
   }
-  if (isi.length > PANJANG_MAKSIMUM) {
+  if (isi.length > PANJANG_ISI_MAKSIMUM) {
     return Response.json(
-      { pesan: `Aspirasi terlalu panjang, maksimal ${PANJANG_MAKSIMUM} karakter.` },
+      { pesan: `Aspirasi terlalu panjang, maksimal ${PANJANG_ISI_MAKSIMUM} karakter.` },
       { status: 400 },
     )
   }
+
+  const judul = typeof body.judul === 'string' ? body.judul.trim() : ''
+  if (judul.length < 4) {
+    return Response.json({ pesan: 'Judul terlalu pendek, minimal 4 karakter.' }, { status: 400 })
+  }
+  if (judul.length > PANJANG_JUDUL_MAKSIMUM) {
+    return Response.json(
+      { pesan: `Judul terlalu panjang, maksimal ${PANJANG_JUDUL_MAKSIMUM} karakter.` },
+      { status: 400 },
+    )
+  }
+
+  // Kategori dicocokkan ke daftar resmi, bukan sekadar dicek "ada isinya".
+  // Tanpa ini kiriman bisa menaruh nilai apa pun dan lolos ke database, lalu
+  // muncul sebagai kategori asing yang tidak bisa disaring di halaman publik.
+  if (!kategoriSah(body.kategori)) {
+    return Response.json({ pesan: 'Pilih salah satu kategori yang tersedia.' }, { status: 400 })
+  }
+  const kategori = body.kategori
 
   try {
     const payload = await getPayload({ config: configPromise })
     await payload.create({
       collection: 'aspirasi',
-      // Hanya `isi` yang diteruskan. Field moderasi tidak pernah diambil dari
-      // kiriman publik, apa pun yang dikirim di body.
-      data: { isi },
+      // Hanya field yang memang diisi pengirim yang diteruskan. Field moderasi
+      // tidak pernah diambil dari kiriman publik, apa pun yang dikirim di body.
+      data: { judul, kategori, isi },
       overrideAccess: true,
     })
     return Response.json({ pesan: 'Aspirasi terkirim.' }, { status: 201 })

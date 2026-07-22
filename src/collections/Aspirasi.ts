@@ -1,6 +1,11 @@
 import type { CollectionConfig, FieldAccess } from 'payload'
 
 import { authenticated } from '../access/authenticated'
+import {
+  OPSI_KATEGORI_PAYLOAD,
+  PANJANG_ISI_MAKSIMUM,
+  PANJANG_JUDUL_MAKSIMUM,
+} from '../utilities/aspirasi'
 
 /**
  * Aspirasi anonim dari warga TI.
@@ -44,18 +49,43 @@ export const Aspirasi: CollectionConfig<'aspirasi'> = {
     delete: authenticated,
   },
   admin: {
-    useAsTitle: 'isi',
-    defaultColumns: ['isi', 'status_tampil', 'createdAt'],
+    useAsTitle: 'judul',
+    defaultColumns: ['judul', 'kategori', 'status_tampil', 'createdAt'],
     description:
       'Kiriman anonim dari warga TI. Tandai "Tampilkan di situs" setelah ditanggapi.',
   },
   defaultSort: '-createdAt',
   fields: [
+    // CATATAN: `judul` dan `kategori` sengaja TIDAK required di sini meski
+    // form publik mewajibkannya (lihat next/aspirasi/route.ts). Menandai
+    // kolom baru sebagai required pada tabel yang sudah berisi data membuat
+    // Payload menahan sinkronisasi skema dengan peringatan kehilangan data.
+    // Kewajibannya ditegakkan di pintu masuk, bukan di skema.
+    {
+      name: 'judul',
+      type: 'text',
+      maxLength: PANJANG_JUDUL_MAKSIMUM,
+      label: 'Judul',
+      admin: {
+        description: 'Ringkasan satu baris. Dipakai sebagai kepala kartu di halaman publik.',
+      },
+    },
+    {
+      name: 'kategori',
+      type: 'select',
+      options: OPSI_KATEGORI_PAYLOAD,
+      label: 'Kategori',
+      // Diindeks karena halaman publik menyaring dan menghitung per kategori.
+      index: true,
+      admin: {
+        description: 'Topik aspirasi. Dipakai untuk saringan di halaman publik.',
+      },
+    },
     {
       name: 'isi',
       type: 'textarea',
       required: true,
-      maxLength: 2000,
+      maxLength: PANJANG_ISI_MAKSIMUM,
       label: 'Isi Aspirasi',
       admin: {
         description: 'Ditulis oleh pengirim anonim. Ubah hanya untuk menyensor hal yang tidak pantas.',

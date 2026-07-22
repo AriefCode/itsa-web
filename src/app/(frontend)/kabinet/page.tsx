@@ -167,7 +167,12 @@ export default async function KabinetPage({ searchParams }: Args) {
               ))}
             </div>
 
-            <Paginasi halaman={halaman} totalHalaman={totalHalaman} buatHref={buatHref} />
+            <Paginasi
+              halaman={halaman}
+              totalHalaman={totalHalaman}
+              buatHref={buatHref}
+              label="Halaman kabinet"
+            />
           </>
         )}
       </div>

@@ -21,6 +21,16 @@
 @custom-variant 2xl (@media (width >= theme(--breakpoint-2xl)));
 
 @layer base {
+  /* Guliran halus untuk tautan anchor (mis. tombol "Tulis Aspirasi" yang
+   * menuju form). Dibungkus media query karena guliran beranimasi bisa
+   * memicu mual bagi sebagian orang; yang meminta gerak minimal tetap
+   * dilompatkan langsung ke tujuan. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   h1,
   h2,
   h3,

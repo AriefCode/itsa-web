@@ -1,116 +1,213 @@
 import type { Metadata } from 'next'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 import configPromise from '@payload-config'
-import React from 'react'
-import { MessageSquareQuote } from 'lucide-react'
+import Link from 'next/link'
+import React, { Suspense } from 'react'
+import { Inbox } from 'lucide-react'
 
 import { FormAspirasi } from '@/components/aspirasi/FormAspirasi'
-import { Media } from '@/components/Media'
+import { HeroAspirasi } from '@/components/aspirasi/HeroAspirasi'
+import { StatistikAspirasi } from '@/components/aspirasi/StatistikAspirasi'
+import { FilterAspirasi } from '@/components/aspirasi/FilterAspirasi'
+import { KartuAspirasi } from '@/components/aspirasi/KartuAspirasi'
+import { SidebarAspirasi } from '@/components/aspirasi/SidebarAspirasi'
+import { TombolMengambang } from '@/components/aspirasi/TombolMengambang'
+import { KerangkaDaftar, KerangkaStatistik } from '@/components/aspirasi/Kerangka'
+import { Paginasi } from '@/components/Paginasi'
+import { kategoriSah } from '@/utilities/aspirasi'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 
-// Aspirasi baru bisa masuk kapan saja, jadi halaman ini tidak dibekukan lama.
-export const revalidate = 60
+const PER_HALAMAN = 8
 
-export default async function AspirasiPage() {
+type Args = {
+  searchParams: Promise<{ [kunci: string]: string | string[] | undefined }>
+}
+
+type Saringan = { q: string; kategori: string; urut: 'terbaru' | 'terlama'; halaman: number }
+
+const satuNilai = (nilai: string | string[] | undefined): string =>
+  (Array.isArray(nilai) ? nilai[0] : nilai)?.trim() ?? ''
+
+/**
+ * Semua penyaringan dan paginasi dikerjakan di SERVER lewat query URL, bukan
+ * di browser. Halaman ini dirancang menampung ratusan sampai ribuan aspirasi;
+ * mengirim seluruhnya ke browser lalu menyaring di sana akan makin berat
+ * seiring bertambahnya data, dan tiap kombinasi saringan tidak akan punya URL
+ * yang bisa dibagikan.
+ */
+const bacaSaringan = (sp: Record<string, string | string[] | undefined>): Saringan => {
+  const kategori = satuNilai(sp.kategori)
+  const halaman = Number.parseInt(satuNilai(sp.halaman), 10)
+  return {
+    q: satuNilai(sp.q),
+    // Kategori asing dari URL diabaikan, bukan diteruskan ke query.
+    kategori: kategoriSah(kategori) ? kategori : '',
+    urut: satuNilai(sp.urut) === 'terlama' ? 'terlama' : 'terbaru',
+    halaman: Number.isFinite(halaman) && halaman > 0 ? halaman : 1,
+  }
+}
+
+const buatQuery = (s: Saringan, halaman: number): string => {
+  const p = new URLSearchParams()
+  if (s.q) p.set('q', s.q)
+  if (s.kategori) p.set('kategori', s.kategori)
+  if (s.urut !== 'terbaru') p.set('urut', s.urut)
+  if (halaman > 1) p.set('halaman', String(halaman))
+  const query = p.toString()
+  return `/aspirasi${query ? `?${query}` : ''}#daftar-aspirasi`
+}
+
+/**
+ * Ringkasan angka. Sengaja dihitung atas SELURUH aspirasi yang tayang, bukan
+ * hasil saringan — angka yang ikut berubah tiap kali kategori diganti tidak
+ * lagi menjawab "seberapa responsif pengurus", yang justru pertanyaannya.
+ */
+async function Statistik() {
   const payload = await getPayload({ config: configPromise })
+  const dasar = { collection: 'aspirasi' as const, limit: 1, depth: 0, overrideAccess: false }
+
+  const [semua, ditanggapi] = await Promise.all([
+    payload.find(dasar),
+    payload.find({
+      ...dasar,
+      where: { or: [{ respon_komentar: { exists: true } }, { respon_foto: { exists: true } }] },
+    }),
+  ])
+
+  return <StatistikAspirasi total={semua.totalDocs} ditanggapi={ditanggapi.totalDocs} />
+}
+
+async function DaftarAspirasi({ saringan }: { saringan: Saringan }) {
+  const payload = await getPayload({ config: configPromise })
+
+  const kondisi: Where[] = []
+  if (saringan.q) {
+    kondisi.push({ or: [{ judul: { like: saringan.q } }, { isi: { like: saringan.q } }] })
+  }
+  if (saringan.kategori) kondisi.push({ kategori: { equals: saringan.kategori } })
 
   // overrideAccess: false membuat query tunduk pada access control publik,
   // sehingga hanya aspirasi yang sudah ditandai tampil yang ikut terambil.
   // Yang belum dimoderasi tidak pernah sampai ke halaman ini.
-  const { docs } = await payload.find({
+  const hasil = await payload.find({
     collection: 'aspirasi',
-    limit: 50,
+    limit: PER_HALAMAN,
+    page: saringan.halaman,
     depth: 1,
-    sort: '-createdAt',
+    sort: saringan.urut === 'terlama' ? 'createdAt' : '-createdAt',
     overrideAccess: false,
+    ...(kondisi.length > 0 ? { where: { and: kondisi } } : {}),
+  })
+
+  if (hasil.docs.length === 0) {
+    const adaSaringan = Boolean(saringan.q || saringan.kategori)
+    return (
+      <div className="rounded-2xl border border-dashed border-olive/30 px-6 py-16 text-center">
+        <span
+          aria-hidden
+          className="mx-auto inline-flex size-16 items-center justify-center rounded-full bg-olive/10 text-olive"
+        >
+          <Inbox className="size-8" strokeWidth={1.5} />
+        </span>
+        <p className="mt-5 font-heading text-lg font-bold text-forest">Belum ada aspirasi</p>
+        <p className="mx-auto mt-2 max-w-[42ch] text-sm leading-relaxed text-olive">
+          {adaSaringan
+            ? 'Tidak ada aspirasi yang cocok dengan filter ini. Coba kata kunci lain atau lihat semua kategori.'
+            : 'Aspirasi yang sudah ditanggapi pengurus akan muncul di sini.'}
+        </p>
+        {adaSaringan && (
+          <Link
+            href="/aspirasi"
+            className="mt-6 inline-flex items-center rounded-xl border border-olive/30 px-5 py-2.5 text-sm font-medium text-forest transition-colors duration-200 hover:bg-olive/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
+          >
+            Reset Filter
+          </Link>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className="mb-4 text-sm text-olive" aria-live="polite">
+        Menampilkan {hasil.docs.length} dari {hasil.totalDocs} aspirasi
+      </p>
+
+      <ul className="space-y-4">
+        {hasil.docs.map((a) => (
+          <KartuAspirasi key={a.id} aspirasi={a} />
+        ))}
+      </ul>
+
+      <Paginasi
+        halaman={hasil.page ?? 1}
+        totalHalaman={hasil.totalPages}
+        buatHref={(n) => buatQuery(saringan, n)}
+        label="Halaman aspirasi"
+        nada="terang"
+      />
+    </>
+  )
+}
+
+export default async function AspirasiPage({ searchParams }: Args) {
+  const sp = await searchParams
+  const saringan = bacaSaringan(sp)
+
+  const payload = await getPayload({ config: configPromise })
+  const { docs: faq } = await payload.find({
+    collection: 'faq',
+    limit: 4,
+    depth: 0,
+    sort: 'urutan',
   })
 
   return (
-    <main className="bg-forest">
-      <div className="container py-14 sm:py-20">
-        <header className="max-w-[60ch]">
-          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-cream sm:text-4xl">
-            Aspirasi
-          </h1>
-          <p className="mt-4 leading-relaxed text-mist">
-            Punya keluhan, usulan, atau pertanyaan untuk ITSA? Kirim di sini. Pengirimannya anonim,
-            jadi tidak perlu khawatir.
-          </p>
-        </header>
+    <main>
+      <HeroAspirasi />
 
-        <div className="mt-10 grid gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-5">
+      <div className="bg-cream text-forest">
+        <div className="container space-y-10 py-12 sm:space-y-12 sm:py-16">
+          {/* scroll-mt memberi jarak di atas form saat dituju dari anchor,
+              supaya judulnya tidak menempel persis di tepi atas layar. */}
+          <section id="tulis-aspirasi" className="scroll-mt-6" aria-label="Form kirim aspirasi">
             <FormAspirasi />
+          </section>
 
-            <div className="mt-6 space-y-2 text-sm leading-relaxed text-mist">
-              <p className="font-medium text-cream">Yang terjadi setelah kamu kirim</p>
-              <p>
-                Aspirasi masuk ke panel pengurus. Tidak semuanya ditampilkan di halaman ini; hanya
-                yang sudah ditanggapi dan layak dibagikan yang muncul di sebelah.
-              </p>
-              <p>
-                Karena anonim, pengurus tidak bisa membalas ke orang tertentu. Kalau kamu butuh
-                jawaban langsung, sebutkan kontakmu di dalam isi aspirasi.
-              </p>
+          <Suspense fallback={<KerangkaStatistik />}>
+            <Statistik />
+          </Suspense>
+
+          <div className="grid gap-8 lg:grid-cols-12">
+            <div className="lg:col-span-3">
+              <FilterAspirasi q={saringan.q} kategori={saringan.kategori} urut={saringan.urut} />
+            </div>
+
+            <section
+              id="daftar-aspirasi"
+              className="scroll-mt-6 lg:col-span-6"
+              aria-labelledby="judul-daftar"
+            >
+              <h2 id="judul-daftar" className="mb-4 font-heading text-xl font-bold text-forest">
+                Aspirasi Terbaru
+              </h2>
+              {/* key membuat Suspense memasang ulang batasnya setiap saringan
+                  berubah, sehingga kerangka muncul lagi alih-alih menahan
+                  daftar lama sampai data baru siap. */}
+              <Suspense key={JSON.stringify(saringan)} fallback={<KerangkaDaftar />}>
+                <DaftarAspirasi saringan={saringan} />
+              </Suspense>
+            </section>
+
+            <div className="lg:col-span-3">
+              <SidebarAspirasi faq={faq} />
             </div>
           </div>
-
-          <section className="lg:col-span-7" aria-labelledby="aspirasi-terjawab">
-            <h2 id="aspirasi-terjawab" className="font-heading text-xl font-bold text-cream">
-              Aspirasi yang sudah ditanggapi
-            </h2>
-
-            {docs.length === 0 ? (
-              <p className="mt-6 rounded-lg border border-dashed border-forest-line px-6 py-12 text-center text-sm text-mist">
-                Belum ada aspirasi yang ditanggapi. Yang sudah dijawab pengurus akan tampil di sini.
-              </p>
-            ) : (
-              <ul className="mt-6 space-y-5">
-                {docs.map((a) => (
-                  <li key={a.id} className="overflow-hidden rounded-lg bg-cream text-forest">
-                    <div className="p-5">
-                      <p className="font-aksen text-xs font-medium uppercase tracking-[0.16em] text-olive">
-                        Aspirasi warga
-                      </p>
-                      <p className="mt-2 leading-relaxed">{a.isi}</p>
-                      <p className="mt-3 font-aksen text-xs tracking-wide text-olive">
-                        {new Date(a.createdAt).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-
-                    {(a.respon_komentar ||
-                      (a.respon_foto && typeof a.respon_foto === 'object')) && (
-                      <div className="border-t border-olive/25 bg-olive/10 p-5">
-                        <p className="flex items-center gap-2 font-aksen text-xs font-medium uppercase tracking-[0.16em] text-olive">
-                          <MessageSquareQuote className="size-3.5" aria-hidden />
-                          Tanggapan pengurus
-                        </p>
-                        {a.respon_komentar && (
-                          <p className="mt-2 leading-relaxed">{a.respon_komentar}</p>
-                        )}
-                        {a.respon_foto && typeof a.respon_foto === 'object' && (
-                          <Media
-                            resource={a.respon_foto}
-                            // Tinggi dibatasi supaya satu foto tinggi tidak
-                            // mendorong aspirasi berikutnya jauh ke bawah.
-                            imgClassName="mt-4 max-h-80 w-full rounded object-cover"
-                            htmlElement={null}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </div>
       </div>
+
+      <TombolMengambang />
     </main>
   )
 }
