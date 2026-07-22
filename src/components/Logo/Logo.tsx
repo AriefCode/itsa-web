@@ -3,27 +3,37 @@ import React from 'react'
 
 interface Props {
   className?: string
+  /** Tampilkan nama panjang di samping wordmark. Dipakai di footer. */
+  withSubtitle?: boolean
+  /** Diterima demi kompatibilitas pemanggil lama; wordmark tidak memuat gambar. */
   loading?: 'lazy' | 'eager'
   priority?: 'auto' | 'high' | 'low'
 }
 
-export const Logo = (props: Props) => {
-  const { loading: loadingFromProps, priority: priorityFromProps, className } = props
-
-  const loading = loadingFromProps || 'lazy'
-  const priority = priorityFromProps || 'low'
-
+/**
+ * Wordmark ITSA.
+ *
+ * SEMENTARA: ini wordmark tipografi, bukan logo resmi. File logo ITSA belum
+ * ada di repo (DESIGN.md §8 mencatat versi terang untuk latar hijau masih
+ * perlu dibuat). Sebelumnya komponen ini menarik logo Payload dari
+ * raw.githubusercontent.com — logo pihak lain, dan permintaan jaringan ke
+ * domain luar di setiap halaman.
+ *
+ * Begitu file logo ITSA tersedia, ganti isi komponen ini dengan <Image>.
+ * Seluruh situs memanggil komponen ini, jadi cukup diubah di satu tempat.
+ *
+ * Wordmark memakai `currentColor` supaya otomatis mengikuti warna teks
+ * induknya, baik di navbar hijau maupun di area cream.
+ */
+export const Logo = ({ className, withSubtitle = false }: Props) => {
   return (
-    /* eslint-disable @next/next/no-img-element */
-    <img
-      alt="Payload Logo"
-      width={193}
-      height={34}
-      loading={loading}
-      fetchPriority={priority}
-      decoding="async"
-      className={clsx('max-w-[9.375rem] w-full h-[34px]', className)}
-      src="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-logo-light.svg"
-    />
+    <span className={clsx('inline-flex items-baseline gap-2 text-current', className)}>
+      <span className="font-heading text-2xl font-extrabold leading-none tracking-tight">ITSA</span>
+      {withSubtitle && (
+        <span className="hidden text-xs leading-none text-mist sm:inline">
+          Politeknik Caltex Riau
+        </span>
+      )}
+    </span>
   )
 }

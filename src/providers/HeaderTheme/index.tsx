@@ -1,8 +1,11 @@
 'use client'
 
-import type { Theme } from '@/providers/Theme/types'
-
 import React, { createContext, useCallback, use, useState } from 'react'
+
+// Dulu diimpor dari providers/Theme, yang sudah dicabut bersama toggle
+// light/dark. HeaderTheme sendiri masih dipakai hero untuk menyetel tampilan
+// header per halaman, jadi tipenya dipindah ke sini.
+type Theme = 'dark' | 'light'
 
 import canUseDOM from '@/utilities/canUseDOM'
 

@@ -1955,6 +1955,8 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Menu navigasi utama. Kalau dikosongkan, situs memakai menu bawaan (Home, About, Kegiatan, Kabinet, News).
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header".
  */
@@ -1980,15 +1982,28 @@ export interface Header {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Tombol gold yang menonjol di kanan navbar. Kosongkan labelnya untuk menyembunyikan tombol.
+   */
+  cta?: {
+    label?: string | null;
+    url?: string | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
 /**
+ * Tautan sosial media footer diambil dari Pengaturan Situs, bukan diatur di sini.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "footer".
  */
 export interface Footer {
   id: number;
+  /**
+   * Satu-dua kalimat tentang ITSA, tampil di kolom pertama footer.
+   */
+  tentang?: string | null;
   navItems?:
     | {
         link: {
@@ -2009,6 +2024,13 @@ export interface Footer {
         id?: string | null;
       }[]
     | null;
+  kontak?: {
+    /**
+     * Contoh: Jl. Umbansari No. 1, Rumbai, Pekanbaru.
+     */
+    alamat?: string | null;
+    email?: string | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2078,6 +2100,12 @@ export interface HeaderSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  cta?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -2087,6 +2115,7 @@ export interface HeaderSelect<T extends boolean = true> {
  * via the `definition` "footer_select".
  */
 export interface FooterSelect<T extends boolean = true> {
+  tentang?: T;
   navItems?:
     | T
     | {
@@ -2100,6 +2129,12 @@ export interface FooterSelect<T extends boolean = true> {
               label?: T;
             };
         id?: T;
+      };
+  kontak?:
+    | T
+    | {
+        alamat?: T;
+        email?: T;
       };
   updatedAt?: T;
   createdAt?: T;
