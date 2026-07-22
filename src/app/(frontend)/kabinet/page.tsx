@@ -6,7 +6,7 @@ import React from 'react'
 
 import type { Divisi, Pengurus } from '@/payload-types'
 import { KartuPengurus } from '@/components/kabinet/KartuPengurus'
-import { Paginasi } from '@/components/kabinet/Paginasi'
+import { Paginasi } from '@/components/Paginasi'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 
