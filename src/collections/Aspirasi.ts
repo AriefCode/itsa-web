@@ -1,6 +1,5 @@
 import type { CollectionConfig, FieldAccess } from 'payload'
 
-import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
 
 /**
@@ -30,8 +29,12 @@ export const Aspirasi: CollectionConfig<'aspirasi'> = {
     plural: 'Aspirasi',
   },
   access: {
-    // Form publik: tidak perlu login untuk mengirim.
-    create: anyone,
+    // Publik TIDAK boleh menembak /api/aspirasi langsung. Kiriman anonim
+    // masuk lewat rute /next/aspirasi, yang memasang honeypot, waktu isi
+    // minimum, dan pembatasan laju per IP sebelum menyimpan. Kalau `create`
+    // dibuka untuk siapa saja, semua pengaman itu bisa dilewati cukup dengan
+    // POST langsung ke endpoint Payload.
+    create: authenticated,
     // Pengurus melihat semua; publik hanya yang sudah dimoderasi.
     read: ({ req: { user } }) => {
       if (user) return true
