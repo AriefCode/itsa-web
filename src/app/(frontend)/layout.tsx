@@ -53,9 +53,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             }}
           />
 
+          {/* Lompat ke konten: tersembunyi sampai difokus keyboard. Tanpa ini,
+              pengguna keyboard dan pembaca layar harus menyusuri seluruh
+              navbar di setiap halaman sebelum sampai ke isi. */}
+          <a
+            href="#konten"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-gold focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-forest"
+          >
+            Lompat ke konten
+          </a>
+
           <Splash />
           <Header />
-          {children}
+          <div id="konten">{children}</div>
           <Footer />
         </Providers>
       </body>
@@ -65,9 +75,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 export const metadata: Metadata = {
   metadataBase: new URL(getServerSideURL()),
+  title: {
+    default: 'ITSA - Information Technology Student Association',
+    template: '%s',
+  },
+  description:
+    'Himpunan mahasiswa Teknologi Informasi Politeknik Caltex Riau. Kegiatan, kabinet, berita, dan aspirasi.',
   openGraph: mergeOpenGraph(),
   twitter: {
     card: 'summary_large_image',
-    creator: '@payloadcms',
   },
 }

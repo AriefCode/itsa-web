@@ -31,16 +31,20 @@ const getPagesSitemap = unstable_cache(
 
     const dateFallback = new Date().toISOString()
 
+    // Halaman berkode yang tidak berasal dari collection Pages, jadi tidak
+    // akan terjaring query di atas dan harus didaftarkan manual.
     const defaultSitemap = [
-      {
-        loc: `${SITE_URL}/search`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/posts`,
-        lastmod: dateFallback,
-      },
-    ]
+      '/',
+      '/kegiatan',
+      '/kabinet',
+      '/posts',
+      '/faq',
+      '/aspirasi',
+      '/search',
+    ].map((jalur) => ({
+      loc: `${SITE_URL}${jalur === '/' ? '/' : jalur}`,
+      lastmod: dateFallback,
+    }))
 
     const sitemap = results.docs
       ? results.docs

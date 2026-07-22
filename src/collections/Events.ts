@@ -240,13 +240,23 @@ export const Events: CollectionConfig<'events'> = {
       // Tahun ikut masuk ke slug supaya kegiatan tahunan yang judulnya sama
       // ("Workshop Git" 2026 & 2027) tidak bentrok di index unik.
       slugify: ({ data, valueToSlugify }) => {
-        const dasar = String(valueToSlugify ?? data?.judul ?? '')
+        // Sumbernya SELALU judul, bukan valueToSlugify. Saat dokumen disunting,
+        // Payload mengirim slug yang sudah ada sebagai valueToSlugify; kalau
+        // itu dipakai sebagai dasar, tahunnya menempel lagi di tiap penyuntingan
+        // dan menghasilkan slug seperti "mubes-2026-2026-2026".
+        const sumber = String(data?.judul ?? valueToSlugify ?? '')
+        const dasar = sumber
           .toLowerCase()
           .trim()
           .replace(/&/g, ' dan ')
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '')
+          // Buang tahun di ujung judul, supaya "Mubes 2026" tidak jadi
+          // "mubes-2026-2026" setelah tahunnya ditambahkan di bawah.
+          .replace(/-(19|20)\d{2}$/, '')
+
         if (!dasar) return dasar
+
         const mulai = data?.tanggal_mulai
         const tahun = mulai ? new Date(mulai as string).getFullYear() : null
         return tahun && !Number.isNaN(tahun) ? `${dasar}-${tahun}` : dasar

@@ -17,7 +17,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
  */
 
 const KUNCI_SESI = 'itsa-splash-sudah-tampil'
-const SUMBER_VIDEO = '/splash.mp4'
+const SUMBER_VIDEO = '/splashItsa.mp4'
+/** Jaring pengaman: overlay ditutup paksa kalau video macet tidak sampai selesai. */
+const BATAS_TAMPIL_MS = 12000
 
 export const Splash: React.FC = () => {
   // Mulai dari false supaya render server dan klien sama (tidak ada hydration
@@ -68,9 +70,16 @@ export const Splash: React.FC = () => {
       if (e.key === 'Escape') tutup()
     }
     window.addEventListener('keydown', onKey)
+
+    // Kalau video gagal diputar tanpa memicu error (mis. autoplay diblokir
+    // browser), tidak ada yang pernah menutup overlay. Batas waktu ini
+    // memastikan pengunjung tidak terkunci di layar splash.
+    const pengaman = window.setTimeout(tutup, BATAS_TAMPIL_MS)
+
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
+      window.clearTimeout(pengaman)
     }
   }, [tampil, tutup])
 

@@ -71,6 +71,12 @@
   --color-forest-elevated: #1c4a34; /* kartu/panel di atas latar gelap, hover */
   --color-forest-deep: #0e2a1d; /* footer "hijau paling tua" (turunan) */
   --color-forest-line: #2a5a41; /* garis/border halus di atas hijau (turunan) */
+  /* Batas kotak isian form. Sengaja dipisah dari forest-line: WCAG 1.4.11
+   * minta batas komponen UI kontras minimal 3:1 terhadap latarnya, sedangkan
+   * forest-line hanya 1.58:1 sehingga kotak isian nyaris tidak terlihat.
+   * Nilai ini 3.77:1 di atas forest dan 3.02:1 di atas forest-elevated,
+   * dengan proporsi warna yang tetap sekeluarga dengan forest. */
+  --color-forest-field: #369e6f;
 
   /* Sekunder (~20%) */
   --color-cream: #fff7e6; /* section terang + teks utama di atas hijau */
@@ -162,7 +168,7 @@
   --muted-foreground: var(--color-mist);
 
   --border: var(--color-forest-line);
-  --input: var(--color-forest-line);
+  --input: var(--color-forest-field);
   --ring: var(--color-gold); /* fokus keyboard harus kelihatan (DESIGN.md §7) */
 
   --radius: 0.75rem; /* 12px — radius kartu (DESIGN.md §4) */

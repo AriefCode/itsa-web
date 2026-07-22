@@ -3,14 +3,19 @@ import { getServerSideURL } from './getURL'
 
 const defaultOpenGraph: Metadata['openGraph'] = {
   type: 'website',
-  description: 'An open-source website built with Payload and Next.js.',
+  locale: 'id_ID',
+  siteName: 'ITSA Politeknik Caltex Riau',
+  title: 'ITSA - Information Technology Student Association',
+  description:
+    'Himpunan mahasiswa Teknologi Informasi Politeknik Caltex Riau. Kegiatan, kabinet, berita, dan aspirasi.',
   images: [
     {
-      url: `${getServerSideURL()}/website-template-OG.webp`,
+      url: `${getServerSideURL()}/itsa-og.webp`,
+      width: 1200,
+      height: 630,
+      alt: 'Logo ITSA, Information Technology Student Association, Politeknik Caltex Riau',
     },
   ],
-  siteName: 'Payload Website Template',
-  title: 'Payload Website Template',
 }
 
 export const mergeOpenGraph = (og?: Metadata['openGraph']): Metadata['openGraph'] => {

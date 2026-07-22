@@ -106,7 +106,7 @@ export const FormAspirasi: React.FC = () => {
         aria-describedby="bantuan-isi sisa-karakter"
         aria-invalid={galat ? true : undefined}
         placeholder="Contoh: AC di lab TI lantai 2 sudah lama tidak dingin, mohon dicek."
-        className="mt-4 w-full rounded-lg border border-forest-line bg-forest-elevated px-4 py-3 text-cream placeholder:text-mist/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="mt-4 w-full rounded-lg border border-forest-field bg-forest-elevated px-4 py-3 text-cream placeholder:text-mist/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       />
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
