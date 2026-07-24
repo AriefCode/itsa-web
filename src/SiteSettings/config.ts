@@ -2,6 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { authenticated } from '../access/authenticated'
 import { revalidateSiteSettings } from './hooks/revalidateSiteSettings'
+import { OPSI_IKON } from '../components/home/ikonOpsi'
 
 /**
  * Pengaturan situs yang dipakai lintas halaman.
@@ -41,6 +42,15 @@ export const SiteSettings: GlobalConfig = {
                   },
                 },
                 {
+                  name: 'judul_aksen',
+                  type: 'text',
+                  label: 'Aksen Judul (disorot gold)',
+                  admin: {
+                    description:
+                      'Potongan akhir judul yang ditampilkan warna gold. Contoh: "Teknologi Informasi.". Kosongkan kalau tak perlu.',
+                  },
+                },
+                {
                   name: 'subjudul',
                   type: 'textarea',
                   label: 'Subjudul',
@@ -53,11 +63,73 @@ export const SiteSettings: GlobalConfig = {
                   name: 'gambar',
                   type: 'upload',
                   relationTo: 'media',
-                  label: 'Gambar Hero',
+                  label: 'Foto Latar Hero',
                   admin: {
                     description:
-                      'Foto kegiatan atau kepengurusan. Kalau kosong, hero tampil sebagai blok teks saja.',
+                      'Foto lebar (landscape) di belakang teks hero. Sebaiknya agak gelap agar teks terbaca. Kalau kosong, hero tampil hijau polos.',
                   },
+                },
+                {
+                  name: 'video_url',
+                  type: 'text',
+                  label: 'Link Video Profil',
+                  admin: {
+                    description:
+                      'URL YouTube video profil ITSA untuk tombol "Lihat Perjalanan Kami". Kosongkan untuk menyembunyikan tombolnya.',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          label: 'Tentang',
+          description: 'Section "Tentang ITSA" di beranda. Kosongkan untuk menyembunyikannya.',
+          fields: [
+            {
+              name: 'tentang',
+              type: 'group',
+              label: false,
+              fields: [
+                {
+                  name: 'judul',
+                  type: 'text',
+                  label: 'Judul',
+                  admin: { description: 'Contoh: "Lebih dari sekadar organisasi."' },
+                },
+                {
+                  name: 'paragraf',
+                  type: 'textarea',
+                  label: 'Paragraf',
+                  maxLength: 400,
+                  admin: { description: 'Satu paragraf pendek yang menjelaskan ITSA.' },
+                },
+                {
+                  name: 'gambar',
+                  type: 'upload',
+                  relationTo: 'media',
+                  label: 'Foto',
+                  admin: { description: 'Foto kebersamaan/kegiatan untuk mendampingi teks.' },
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'kartu_judul',
+                      type: 'text',
+                      label: 'Judul Kartu Sorot',
+                      admin: {
+                        width: '40%',
+                        description: 'Kartu kecil melayang di atas foto. Contoh: "Komunitas Solid".',
+                      },
+                    },
+                    {
+                      name: 'kartu_teks',
+                      type: 'text',
+                      label: 'Teks Kartu Sorot',
+                      admin: { width: '60%' },
+                    },
+                  ],
                 },
               ],
             },
@@ -141,11 +213,32 @@ export const SiteSettings: GlobalConfig = {
                   ],
                 },
                 {
-                  name: 'akhiran',
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'akhiran',
+                      type: 'text',
+                      label: 'Akhiran',
+                      admin: {
+                        width: '30%',
+                        description: 'Ditempel di belakang angka. Contoh: + atau %.',
+                      },
+                    },
+                    {
+                      name: 'ikon',
+                      type: 'select',
+                      label: 'Ikon',
+                      options: OPSI_IKON,
+                      admin: { width: '70%', description: 'Ikon kecil di atas angka.' },
+                    },
+                  ],
+                },
+                {
+                  name: 'sub',
                   type: 'text',
-                  label: 'Akhiran',
+                  label: 'Sub-keterangan',
                   admin: {
-                    description: 'Opsional, ditempel di belakang angka. Contoh: + atau %.',
+                    description: 'Baris kecil di bawah label. Contoh: "Bergabung & bertumbuh bersama".',
                   },
                 },
               ],

@@ -3,6 +3,7 @@ import { slugField } from 'payload'
 
 import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
+import { OPSI_IKON } from '../components/home/ikonOpsi'
 import {
   revalidateKabinet,
   revalidateKabinetSetelahHapus,
@@ -42,15 +43,16 @@ export const Divisi: CollectionConfig<'divisi'> = {
   // Dipakai saat Divisi direferensikan dari Pengurus/Kegiatan, supaya frontend
   // dapat datanya tanpa query tambahan.
   //
-  // `urutan` dan `deskripsi_singkat` WAJIB ada di sini: halaman Kabinet
-  // mengurutkan divisi memakai `urutan` dan menampilkan deskripsinya. Tanpa
-  // keduanya, relasi divisi hanya membawa nama, deskripsi divisi hilang tanpa
-  // pesan error, dan urutannya diam-diam jatuh ke alfabetis.
+  // `urutan`, `deskripsi_singkat`, dan `ikon` WAJIB ada di sini: halaman Kabinet
+  // mengurutkan divisi memakai `urutan` dan menampilkan deskripsinya, sementara
+  // section Divisi di beranda menampilkan ikonnya. Tanpa ini, relasi divisi
+  // hanya membawa nama dan sisanya hilang tanpa pesan error.
   defaultPopulate: {
     nama: true,
     slug: true,
     urutan: true,
     deskripsi_singkat: true,
+    ikon: true,
   },
   fields: [
     {
@@ -66,7 +68,16 @@ export const Divisi: CollectionConfig<'divisi'> = {
       label: 'Deskripsi Singkat',
       admin: {
         description:
-          'Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet.',
+          'Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet & beranda.',
+      },
+    },
+    {
+      name: 'ikon',
+      type: 'select',
+      label: 'Ikon',
+      options: OPSI_IKON,
+      admin: {
+        description: 'Ikon yang mewakili divisi di section Divisi beranda.',
       },
     },
     {

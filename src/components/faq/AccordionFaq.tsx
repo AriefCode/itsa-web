@@ -12,14 +12,27 @@ import { ambilTeks } from '@/utilities/lexicalText'
  * tutupnya jalan tanpa JS, sudah benar untuk pembaca layar, dan bisa dicari
  * lewat Ctrl+F browser karena isinya tetap ada di DOM.
  */
-export const AccordionFaq: React.FC<{ faq: Faq[]; ringkas?: boolean }> = ({
+export const AccordionFaq: React.FC<{ faq: Faq[]; ringkas?: boolean; terang?: boolean }> = ({
   faq,
   ringkas = false,
+  terang = false,
 }) => (
-  <div className="divide-y divide-forest-line rounded-lg border border-forest-line">
+  <div
+    className={
+      terang
+        ? 'divide-y divide-olive/20 rounded-lg border border-olive/20'
+        : 'divide-y divide-forest-line rounded-lg border border-forest-line'
+    }
+  >
     {faq.map((f) => (
       <details key={f.id} className="group px-5">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-cream marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+        <summary
+          className={
+            terang
+              ? 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-forest marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest'
+              : 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-cream marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold'
+          }
+        >
           <span className="font-medium">{f.pertanyaan}</span>
           {/* Tanda buka/tutup digambar dari CSS: satu elemen, dua keadaan */}
           <span
@@ -35,7 +48,9 @@ export const AccordionFaq: React.FC<{ faq: Faq[]; ringkas?: boolean }> = ({
             memunculkan "sungai" celah putih di tengah paragraf. Bahasa
             Indonesia banyak kata panjang, jadi efeknya terasa. Pemenggalan
             mengikuti lang="id" yang disetel di layout. */}
-        <div className="hyphens-auto pb-5 text-justify text-sm leading-relaxed text-mist">
+        <div
+          className={`hyphens-auto pb-5 text-justify text-sm leading-relaxed ${terang ? 'text-olive' : 'text-mist'}`}
+        >
           {ringkas ? (
             <RichTextPolos data={f.jawaban} />
           ) : (

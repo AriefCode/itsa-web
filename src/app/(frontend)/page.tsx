@@ -3,9 +3,14 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import React from 'react'
 
+import type { Media } from '@/payload-types'
 import { Hero } from '@/components/home/Hero'
 import { StatCounter } from '@/components/home/StatCounter'
-import { CtaAspirasi, FaqRingkas, KegiatanMendatang, RecapTerbaru } from '@/components/home/Seksi'
+import { TentangItsa } from '@/components/home/TentangItsa'
+import { HighlightKegiatan } from '@/components/home/HighlightKegiatan'
+import { DivisiRingkas } from '@/components/home/DivisiRingkas'
+import { GaleriMomen } from '@/components/home/GaleriMomen'
+import { CtaAspirasi, FaqRingkas, KegiatanMendatang } from '@/components/home/Seksi'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -13,19 +18,20 @@ import { getServerSideURL } from '@/utilities/getURL'
 export const revalidate = 600
 
 /**
- * Beranda ITSA (DESIGN.md §6):
- * hero hijau -> band statistik cream -> recap -> kegiatan mendatang ->
- * FAQ ringkas -> ajakan aspirasi -> footer.
+ * Beranda ITSA (DESIGN.md §6). Ritme terang/gelap per section:
+ * hero (foto) -> statistik (cream) -> tentang (hijau) -> highlight (cream) ->
+ * kegiatan mendatang (hijau) -> divisi (cream) -> galeri (hijau) ->
+ * FAQ (cream) -> ajakan aspirasi -> footer.
  *
- * Status kegiatan tidak lagi disimpan di database, jadi pemisahan "mendatang"
- * dan "selesai" dilakukan lewat tanggal. Patokannya tanggal_selesai; kalau
- * kosong, dipakai tanggal_mulai.
+ * Status kegiatan tidak disimpan di database; pemisahan "mendatang" dan
+ * "selesai" dihitung dari tanggal. Patokannya tanggal_selesai; kalau kosong,
+ * dipakai tanggal_mulai.
  */
 export default async function HomePage() {
   const payload = await getPayload({ config: configPromise })
   const sekarang = new Date().toISOString()
 
-  const [settings, mendatang, selesai, faq] = await Promise.all([
+  const [settings, mendatang, selesai, faq, divisi, fotoEvent] = await Promise.all([
     getCachedGlobal('site-settings', 2)(),
     payload.find({
       collection: 'events',
@@ -47,7 +53,7 @@ export default async function HomePage() {
     }),
     payload.find({
       collection: 'events',
-      limit: 3,
+      limit: 5,
       depth: 1,
       sort: '-tanggal_mulai',
       where: {
@@ -64,18 +70,57 @@ export default async function HomePage() {
       },
     }),
     payload.find({ collection: 'faq', limit: 4, sort: 'urutan' }),
+    payload.find({ collection: 'divisi', limit: 8, sort: 'urutan' }),
+    // Galeri momen diambil otomatis dari thumbnail kegiatan terbaru yang punya
+    // foto, jadi tidak perlu koleksi galeri terpisah.
+    payload.find({
+      collection: 'events',
+      limit: 10,
+      depth: 1,
+      sort: '-tanggal_mulai',
+      where: {
+        _status: { equals: 'published' },
+        thumbnail: { exists: true },
+      },
+    }),
   ])
+
+  // Kumpulkan foto galeri: ambil thumbnail yang benar-benar ter-populate, buang
+  // duplikat berdasarkan id, batasi delapan supaya barisnya tidak kepanjangan.
+  const galeri: Media[] = []
+  const terlihat = new Set<number>()
+  for (const e of fotoEvent.docs) {
+    const t = e.thumbnail
+    if (t && typeof t === 'object' && !terlihat.has(t.id)) {
+      terlihat.add(t.id)
+      galeri.push(t)
+    }
+    if (galeri.length >= 8) break
+  }
+
+  const tentang = settings?.tentang
 
   return (
     <main>
       <Hero
         judul={settings?.hero?.judul}
+        aksen={settings?.hero?.judul_aksen}
         subjudul={settings?.hero?.subjudul}
         gambar={settings?.hero?.gambar}
+        videoUrl={settings?.hero?.video_url}
       />
       <StatCounter statistik={settings?.statistik ?? []} />
-      <RecapTerbaru events={selesai.docs} />
+      <TentangItsa
+        judul={tentang?.judul}
+        paragraf={tentang?.paragraf}
+        gambar={tentang?.gambar}
+        kartuJudul={tentang?.kartu_judul}
+        kartuTeks={tentang?.kartu_teks}
+      />
+      <HighlightKegiatan events={selesai.docs} />
       <KegiatanMendatang events={mendatang.docs} />
+      <DivisiRingkas divisi={divisi.docs} />
+      <GaleriMomen foto={galeri} />
       <FaqRingkas faq={faq.docs} />
       <CtaAspirasi />
     </main>

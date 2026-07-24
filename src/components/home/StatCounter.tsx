@@ -2,18 +2,23 @@
 
 import React, { useEffect, useRef } from 'react'
 
+import { ikonDari } from './ikon'
+
 export type Statistik = {
   label: string
   nilai: number
   akhiran?: string | null
+  sub?: string | null
+  ikon?: string | null
   id?: string | null
 }
 
 /**
  * Band statistik dengan animasi angka naik (DESIGN.md §4).
  *
- * Latar cream memberi jeda terang di antara section hijau, angka forest
- * berukuran besar, garis gold sebagai aksen.
+ * Latar cream memberi jeda terang di antara section hijau. Tiap kolom: ikon
+ * kecil, angka besar, label tebal, lalu sub-keterangan. Kolom dipisah garis
+ * vertikal tipis di layar lebar.
  *
  * Angka dianimasikan lewat requestAnimationFrame yang menulis langsung ke
  * textContent, bukan lewat state React. Menyimpan nilai per frame di state
@@ -84,7 +89,7 @@ export const StatCounter: React.FC<{ statistik: Statistik[] }> = ({ statistik })
 
   return (
     <section className="bg-cream text-forest" aria-labelledby="statistik-judul">
-      <div className="container py-16 sm:py-20">
+      <div className="container py-14 sm:py-16">
         <h2 id="statistik-judul" className="sr-only">
           ITSA dalam angka
         </h2>
@@ -94,20 +99,29 @@ export const StatCounter: React.FC<{ statistik: Statistik[] }> = ({ statistik })
             Angka statistik belum diisi. Tambahkan lewat Pengaturan Situs di panel admin.
           </p>
         ) : (
-          <dl className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            {statistik.map((s, i) => (
-              <div key={s.id ?? i} className="border-t-2 border-gold pt-5">
-                {/* Angka pakai font aksen mono (DESIGN.md §3): lebar tiap digit
-                    sama, jadi angka tidak bergeser-geser selama animasi
-                    count-up. */}
-                <dt className="font-aksen text-4xl font-bold leading-none tabular-nums sm:text-5xl">
-                  <AngkaNaik nilai={s.nilai} akhiran={s.akhiran} />
-                </dt>
-                <dd className="mt-2 font-aksen text-xs uppercase tracking-[0.14em] text-olive">
-                  {s.label}
-                </dd>
-              </div>
-            ))}
+          <dl className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-olive/15">
+            {statistik.map((s, i) => {
+              const Ikon = ikonDari(s.ikon)
+              return (
+                <div key={s.id ?? i} className="lg:px-8 lg:first:pl-0 lg:last:pr-0">
+                  <Ikon className="size-6 text-forest-field" aria-hidden strokeWidth={2} />
+                  {/* Angka pakai font aksen mono (DESIGN.md §3): lebar tiap digit
+                      sama, jadi angka tidak bergeser-geser selama animasi
+                      count-up. */}
+                  <dt className="mt-4 font-aksen text-4xl font-bold leading-none tabular-nums sm:text-5xl">
+                    <AngkaNaik nilai={s.nilai} akhiran={s.akhiran} />
+                  </dt>
+                  <dd className="mt-3">
+                    <span className="block font-heading text-sm font-bold text-forest">
+                      {s.label}
+                    </span>
+                    {s.sub && (
+                      <span className="mt-1 block text-xs leading-relaxed text-olive">{s.sub}</span>
+                    )}
+                  </dd>
+                </div>
+              )
+            })}
           </dl>
         )}
       </div>

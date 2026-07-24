@@ -876,9 +876,30 @@ export interface Divisi {
   id: number;
   nama: string;
   /**
-   * Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet.
+   * Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet & beranda.
    */
   deskripsi_singkat: string;
+  /**
+   * Ikon yang mewakili divisi di section Divisi beranda.
+   */
+  ikon?:
+    | (
+        | 'anggota'
+        | 'komunikasi'
+        | 'teknologi'
+        | 'wirausaha'
+        | 'minat-bakat'
+        | 'sosial'
+        | 'kalender'
+        | 'divisi'
+        | 'prestasi'
+        | 'bintang'
+        | 'roket'
+        | 'buku'
+        | 'kode'
+        | 'kamera'
+      )
+    | null;
   /**
    * Angka kecil tampil lebih dulu. Divisi inti biasanya 1, 2, 3, ...
    */
@@ -1521,6 +1542,7 @@ export interface PengurusSelect<T extends boolean = true> {
 export interface DivisiSelect<T extends boolean = true> {
   nama?: T;
   deskripsi_singkat?: T;
+  ikon?: T;
   urutan?: T;
   generateSlug?: T;
   slug?: T;
@@ -2034,12 +2056,39 @@ export interface Footer {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Kolom kedua footer. Kalau kosong, dipakai daftar bawaan (Aspirasi, FAQ, Dokumentasi, Kontak).
+   */
+  tautanCepat?:
+    | {
+        link: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          url?: string | null;
+          label: string;
+        };
+        id?: string | null;
+      }[]
+    | null;
   kontak?: {
     /**
      * Contoh: Jl. Umbansari No. 1, Rumbai, Pekanbaru.
      */
     alamat?: string | null;
     email?: string | null;
+    /**
+     * Opsional. Contoh: (0761) 53939.
+     */
+    telepon?: string | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -2058,13 +2107,40 @@ export interface SiteSetting {
      */
     judul?: string | null;
     /**
+     * Potongan akhir judul yang ditampilkan warna gold. Contoh: "Teknologi Informasi.". Kosongkan kalau tak perlu.
+     */
+    judul_aksen?: string | null;
+    /**
      * Satu kalimat penjelas, maksimal sekitar 20 kata.
      */
     subjudul?: string | null;
     /**
-     * Foto kegiatan atau kepengurusan. Kalau kosong, hero tampil sebagai blok teks saja.
+     * Foto lebar (landscape) di belakang teks hero. Sebaiknya agak gelap agar teks terbaca. Kalau kosong, hero tampil hijau polos.
      */
     gambar?: (number | null) | Media;
+    /**
+     * URL YouTube video profil ITSA untuk tombol "Lihat Perjalanan Kami". Kosongkan untuk menyembunyikan tombolnya.
+     */
+    video_url?: string | null;
+  };
+  tentang?: {
+    /**
+     * Contoh: "Lebih dari sekadar organisasi."
+     */
+    judul?: string | null;
+    /**
+     * Satu paragraf pendek yang menjelaskan ITSA.
+     */
+    paragraf?: string | null;
+    /**
+     * Foto kebersamaan/kegiatan untuk mendampingi teks.
+     */
+    gambar?: (number | null) | Media;
+    /**
+     * Kartu kecil melayang di atas foto. Contoh: "Komunitas Solid".
+     */
+    kartu_judul?: string | null;
+    kartu_teks?: string | null;
   };
   sosial?: {
     /**
@@ -2096,9 +2172,34 @@ export interface SiteSetting {
          */
         nilai: number;
         /**
-         * Opsional, ditempel di belakang angka. Contoh: + atau %.
+         * Ditempel di belakang angka. Contoh: + atau %.
          */
         akhiran?: string | null;
+        /**
+         * Ikon kecil di atas angka.
+         */
+        ikon?:
+          | (
+              | 'anggota'
+              | 'komunikasi'
+              | 'teknologi'
+              | 'wirausaha'
+              | 'minat-bakat'
+              | 'sosial'
+              | 'kalender'
+              | 'divisi'
+              | 'prestasi'
+              | 'bintang'
+              | 'roket'
+              | 'buku'
+              | 'kode'
+              | 'kamera'
+            )
+          | null;
+        /**
+         * Baris kecil di bawah label. Contoh: "Bergabung & bertumbuh bersama".
+         */
+        sub?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -2154,11 +2255,26 @@ export interface FooterSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  tautanCepat?:
+    | T
+    | {
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        id?: T;
+      };
   kontak?:
     | T
     | {
         alamat?: T;
         email?: T;
+        telepon?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -2173,8 +2289,19 @@ export interface SiteSettingsSelect<T extends boolean = true> {
     | T
     | {
         judul?: T;
+        judul_aksen?: T;
         subjudul?: T;
         gambar?: T;
+        video_url?: T;
+      };
+  tentang?:
+    | T
+    | {
+        judul?: T;
+        paragraf?: T;
+        gambar?: T;
+        kartu_judul?: T;
+        kartu_teks?: T;
       };
   sosial?:
     | T
@@ -2191,6 +2318,8 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         label?: T;
         nilai?: T;
         akhiran?: T;
+        ikon?: T;
+        sub?: T;
         id?: T;
       };
   updatedAt?: T;

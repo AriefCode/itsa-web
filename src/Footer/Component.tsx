@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import React from 'react'
-import { Instagram, Linkedin, Mail, Youtube } from 'lucide-react'
+import { Instagram, Linkedin, Mail, MapPin, Phone, Youtube } from 'lucide-react'
 
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { Logo } from '@/components/Logo/Logo'
@@ -12,22 +12,54 @@ const NAV_BAWAAN = [
   { label: 'Kegiatan', url: '/kegiatan' },
   { label: 'Kabinet', url: '/kabinet' },
   { label: 'News', url: '/posts' },
-  { label: 'FAQ', url: '/faq' },
 ]
 
-export async function Footer() {
-  const footerData = await getCachedGlobal('footer', 1)()
-  const settings = await getCachedGlobal('site-settings', 1)()
+/** Tautan cepat bawaan selama kolom di admin masih kosong. */
+const CEPAT_BAWAAN = [
+  { label: 'Aspirasi', url: '/aspirasi' },
+  { label: 'FAQ', url: '/faq' },
+  { label: 'Dokumentasi', url: '/kegiatan' },
+]
 
-  const dariCms = (footerData?.navItems ?? [])
+/** Satu kolom daftar tautan di footer. */
+const KolomTautan: React.FC<{ judul: string; items: { label: string; url: string }[] }> = ({
+  judul,
+  items,
+}) => (
+  <nav aria-label={judul}>
+    <h2 className="font-heading text-sm font-bold text-cream">{judul}</h2>
+    <ul className="mt-3 space-y-2">
+      {items.map((item) => (
+        <li key={`${judul}-${item.url}-${item.label}`}>
+          <Link
+            href={item.url}
+            className="rounded text-sm text-mist transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            {item.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)
+
+const petakan = (items?: { link?: { label?: string | null; url?: string | null; reference?: unknown } | null }[] | null) =>
+  (items ?? [])
     .map(({ link }) => {
-      const referensi = link?.reference?.value
+      const referensi = (link?.reference as { value?: { slug?: string } } | undefined)?.value
       const slug = typeof referensi === 'object' && referensi ? referensi.slug : null
       return { label: link?.label ?? '', url: link?.url || (slug ? `/${slug}` : '#') }
     })
     .filter((i) => i.label)
 
-  const nav = dariCms.length > 0 ? dariCms : NAV_BAWAAN
+export async function Footer() {
+  const footerData = await getCachedGlobal('footer', 1)()
+  const settings = await getCachedGlobal('site-settings', 1)()
+
+  const nav = petakan(footerData?.navItems)
+  const cepat = petakan(footerData?.tautanCepat)
+  const daftarNav = nav.length > 0 ? nav : NAV_BAWAAN
+  const daftarCepat = cepat.length > 0 ? cepat : CEPAT_BAWAAN
   const sosial = settings?.sosial ?? {}
 
   // Hanya kanal yang diisi yang tampil. Ikon dipetakan eksplisit supaya tidak
@@ -43,11 +75,12 @@ export async function Footer() {
     sosial.email && { nama: 'Email', href: `mailto:${sosial.email}`, Icon: Mail },
   ].filter(Boolean) as { nama: string; href: string; Icon: typeof Mail }[]
 
-  const adaKontak = Boolean(footerData?.kontak?.alamat || footerData?.kontak?.email)
+  const kontak = footerData?.kontak
+  const adaKontak = Boolean(kontak?.alamat || kontak?.email || kontak?.telepon)
 
   return (
     <footer className="mt-auto border-t border-forest-line bg-forest-deep text-cream">
-      <div className="container grid gap-x-8 gap-y-10 py-10 sm:grid-cols-2 sm:py-12 lg:grid-cols-4">
+      <div className="container grid gap-x-8 gap-y-10 py-12 sm:grid-cols-2 sm:py-14 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <Link
             href="/"
@@ -56,73 +89,61 @@ export async function Footer() {
             <Logo variant="lockup" />
           </Link>
           {footerData?.tentang && (
-            <p className="mt-4 max-w-[45ch] text-sm leading-relaxed text-mist">
+            <p className="mt-4 max-w-[42ch] text-sm leading-relaxed text-mist">
               {footerData.tentang}
             </p>
           )}
+
+          {kanal.length > 0 && (
+            <ul className="mt-5 flex gap-2">
+              {kanal.map(({ nama, href, Icon }) => (
+                <li key={nama}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex size-9 items-center justify-center rounded-lg border border-forest-line text-mist transition-colors hover:border-gold hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                  >
+                    <span className="sr-only">{nama}</span>
+                    <Icon className="size-4" aria-hidden />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <nav aria-labelledby="footer-navigasi">
-          <h2 id="footer-navigasi" className="font-heading text-sm font-bold text-cream">
-            Navigasi
-          </h2>
-          <ul className="mt-3 space-y-1.5">
-            {nav.map((item) => (
-              <li key={item.url}>
-                <Link
-                  href={item.url}
-                  className="rounded text-sm text-mist transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <KolomTautan judul="Navigasi" items={daftarNav} />
+        <KolomTautan judul="Tautan Cepat" items={daftarCepat} />
 
         <div>
-          {/* Judul kolom hanya tampil kalau ada isinya, supaya tidak ada
-              heading menggantung saat Kontak belum diisi di admin. */}
           {adaKontak && (
             <>
               <h2 className="font-heading text-sm font-bold text-cream">Kontak</h2>
-              <div className="mt-3 space-y-1.5 text-sm text-mist">
-                {footerData?.kontak?.alamat && (
-                  <p className="max-w-[30ch] leading-relaxed">{footerData.kontak.alamat}</p>
+              <ul className="mt-3 space-y-2.5 text-sm text-mist">
+                {kontak?.alamat && (
+                  <li className="flex gap-2.5">
+                    <MapPin className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                    <span className="max-w-[26ch] leading-relaxed">{kontak.alamat}</span>
+                  </li>
                 )}
-                {footerData?.kontak?.email && (
-                  <a
-                    href={`mailto:${footerData.kontak.email}`}
-                    className="block rounded transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-                  >
-                    {footerData.kontak.email}
-                  </a>
-                )}
-              </div>
-            </>
-          )}
-
-          {kanal.length > 0 && (
-            <>
-              <h2
-                className={`font-heading text-sm font-bold text-cream ${adaKontak ? 'mt-6' : ''}`}
-              >
-                Ikuti Kami
-              </h2>
-              <ul className="mt-3 flex gap-2">
-                {kanal.map(({ nama, href, Icon }) => (
-                  <li key={nama}>
+                {kontak?.email && (
+                  <li className="flex gap-2.5">
+                    <Mail className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
                     <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex size-9 items-center justify-center rounded-lg border border-forest-line text-mist transition-colors hover:border-gold hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                      href={`mailto:${kontak.email}`}
+                      className="rounded break-all transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                     >
-                      <span className="sr-only">{nama}</span>
-                      <Icon className="size-4" aria-hidden />
+                      {kontak.email}
                     </a>
                   </li>
-                ))}
+                )}
+                {kontak?.telepon && (
+                  <li className="flex gap-2.5">
+                    <Phone className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                    <span>{kontak.telepon}</span>
+                  </li>
+                )}
               </ul>
             </>
           )}
@@ -130,10 +151,12 @@ export async function Footer() {
       </div>
 
       <div className="border-t border-forest-line/60">
-        <div className="container py-5">
+        <div className="container flex flex-col gap-1 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-mist">
-            Information Technology Student Association, Politeknik Caltex Riau.
+            © {new Date().getFullYear()} Information Technology Student Association, Politeknik Caltex
+            Riau.
           </p>
+          <p className="text-xs text-mist/70">All rights reserved.</p>
         </div>
       </div>
     </footer>

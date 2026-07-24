@@ -41,6 +41,25 @@ export const Footer: GlobalConfig = {
       },
     },
     {
+      name: 'tautanCepat',
+      type: 'array',
+      label: 'Tautan Cepat',
+      maxRows: 6,
+      fields: [
+        link({
+          appearances: false,
+        }),
+      ],
+      admin: {
+        initCollapsed: true,
+        description:
+          'Kolom kedua footer. Kalau kosong, dipakai daftar bawaan (Aspirasi, FAQ, Dokumentasi, Kontak).',
+        components: {
+          RowLabel: '@/Footer/RowLabel#RowLabel',
+        },
+      },
+    },
+    {
       name: 'kontak',
       type: 'group',
       label: 'Kontak',
@@ -55,6 +74,12 @@ export const Footer: GlobalConfig = {
           name: 'email',
           type: 'email',
           label: 'Email',
+        },
+        {
+          name: 'telepon',
+          type: 'text',
+          label: 'Telepon',
+          admin: { description: 'Opsional. Contoh: (0761) 53939.' },
         },
       ],
     },
