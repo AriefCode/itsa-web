@@ -13,6 +13,8 @@ import {
   BookOpen,
   Code2,
   Camera,
+  Laptop,
+  Newspaper,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -37,6 +39,8 @@ export const IKON: Record<string, LucideIcon> = {
   buku: BookOpen,
   kode: Code2,
   kamera: Camera,
+  akademik: Laptop,
+  berita: Newspaper,
 }
 
 /** Ambil komponen ikon dari kunci; jatuh ke `bintang` kalau kunci tak dikenal. */
