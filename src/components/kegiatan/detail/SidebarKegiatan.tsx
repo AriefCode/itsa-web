@@ -1,8 +1,14 @@
 import React from 'react'
-import { CalendarDays, Clock, Info, MapPin, Tag, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clock, Info, MapPin, Tag, Users } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
-import { formatBiaya, formatRentang, formatWaktu, sudahSelesai } from '@/utilities/kegiatan'
+import {
+  formatBiaya,
+  formatRentang,
+  formatWaktu,
+  pendaftaranBuka,
+  sudahSelesai,
+} from '@/utilities/kegiatan'
 import { AksiKegiatan, type Poster } from './AksiKegiatan'
 
 /** Satu baris informasi: ikon, label kecil, lalu nilainya. */
@@ -33,6 +39,7 @@ export const SidebarKegiatan: React.FC<{ event: Event; poster: Poster }> = ({ ev
   const waktu = formatWaktu(event)
   const divisi = event.divisi && typeof event.divisi === 'object' ? event.divisi : null
   const linkDokumentasi = selesai ? event.link_dokumentasi : null
+  const bukaPendaftaran = pendaftaranBuka(event)
 
   return (
     <aside className="lg:sticky lg:top-8">
@@ -64,6 +71,18 @@ export const SidebarKegiatan: React.FC<{ event: Event; poster: Poster }> = ({ ev
             {formatBiaya(event)}
           </Baris>
         </dl>
+
+        {bukaPendaftaran && event.link_pendaftaran && (
+          <a
+            href={event.link_pendaftaran}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gold px-5 py-3 text-sm font-semibold text-forest transition-transform hover:brightness-105 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
+          >
+            Daftar Sekarang
+            <ArrowRight className="size-4" aria-hidden />
+          </a>
+        )}
 
         <div className="mt-7 border-t border-forest-line pt-6">
           <h3 className="font-heading text-base font-bold">Aksi Cepat</h3>

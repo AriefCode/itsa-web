@@ -17,12 +17,73 @@ export const sudahSelesai = (
   acuan: Date = new Date(),
 ) => akhirKegiatan(event).getTime() < acuan.getTime()
 
+/**
+ * Waktu tutup pendaftaran sebuah kegiatan: pakai `pendaftaran_tutup` kalau
+ * diisi, kalau tidak dianggap tutup saat kegiatan mulai.
+ */
+export const tutupPendaftaran = (
+  event: Pick<Event, 'tanggal_mulai' | 'pendaftaran_tutup'>,
+): Date => new Date(event.pendaftaran_tutup || event.tanggal_mulai)
+
+/**
+ * Pendaftaran masih dibuka: ada link pendaftaran DAN belum melewati waktu
+ * tutupnya. Dipakai untuk memunculkan tombol "Daftar Sekarang".
+ */
+export const pendaftaranBuka = (
+  event: Pick<Event, 'tanggal_mulai' | 'pendaftaran_tutup' | 'link_pendaftaran'>,
+  acuan: Date = new Date(),
+): boolean =>
+  Boolean(event.link_pendaftaran) && tutupPendaftaran(event).getTime() >= acuan.getTime()
+
 export type Saringan = 'semua' | 'mendatang' | 'selesai'
 
 export const saring = (events: Event[], filter: Saringan, acuan: Date = new Date()) => {
   if (filter === 'semua') return events
   const selesai = filter === 'selesai'
   return events.filter((e) => sudahSelesai(e, acuan) === selesai)
+}
+
+/** Id divisi sebuah kegiatan, entah relasinya sudah ter-populate atau masih id. */
+export const idDivisi = (event: Pick<Event, 'divisi'>): number | null =>
+  event.divisi == null ? null : typeof event.divisi === 'object' ? event.divisi.id : event.divisi
+
+export type FilterKategori = 'semua' | 'gratis' | 'berbayar'
+
+export type FilterKegiatan = {
+  q?: string
+  status?: Saringan
+  kategori?: FilterKategori
+  divisi?: number | 'semua'
+}
+
+/**
+ * Saringan gabungan untuk halaman Kegiatan: kata kunci, status (akan
+ * datang/selesai), kategori biaya, dan divisi. Dipakai bersama oleh ketiga
+ * mode (timeline, kalender, gallery) supaya hasilnya selalu konsisten.
+ */
+export const saringLengkap = (
+  events: Event[],
+  filter: FilterKegiatan,
+  acuan: Date = new Date(),
+): Event[] => {
+  const q = (filter.q ?? '').trim().toLowerCase()
+  return events.filter((e) => {
+    if (filter.status && filter.status !== 'semua') {
+      if (sudahSelesai(e, acuan) !== (filter.status === 'selesai')) return false
+    }
+    if (filter.kategori && filter.kategori !== 'semua') {
+      if (Boolean(e.gratis) !== (filter.kategori === 'gratis')) return false
+    }
+    if (filter.divisi && filter.divisi !== 'semua') {
+      if (idDivisi(e) !== filter.divisi) return false
+    }
+    if (q) {
+      const namaDivisi = e.divisi && typeof e.divisi === 'object' ? e.divisi.nama : ''
+      const teks = `${e.judul} ${e.lokasi ?? ''} ${namaDivisi}`.toLowerCase()
+      if (!teks.includes(q)) return false
+    }
+    return true
+  })
 }
 
 const BULAN = [
@@ -132,6 +193,29 @@ export const formatBiaya = (event: Pick<Event, 'gratis' | 'htm'>) =>
 /** Kunci hari lokal (YYYY-MM-DD), dipakai kalender untuk mencocokkan tanggal. */
 export const kunciHari = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/** Ubah kunci hari (YYYY-MM-DD) jadi label baca "23 Juli 2026". */
+export const labelHari = (kunci: string): string => {
+  const [y, m, d] = kunci.split('-').map(Number)
+  return `${d} ${namaBulan(m - 1)} ${y}`
+}
+
+/**
+ * Tanggal awal yang paling relevan untuk kalender: hari ini kalau ada
+ * kegiatannya, kalau tidak hari berkegiatan terdekat ke depan, kalau tidak yang
+ * terdekat ke belakang. Dipakai sebagai tanggal terpilih pembuka.
+ */
+export const tanggalAwal = (events: Event[], acuan: Date = new Date()): string | null => {
+  const hariIni = kunciHari(acuan)
+  const semua = new Set<string>()
+  for (const e of events) for (const h of hariTerpakai(e)) semua.add(h)
+  if (semua.size === 0) return null
+  if (semua.has(hariIni)) return hariIni
+
+  const urut = [...semua].sort()
+  const kedepan = urut.find((k) => k >= hariIni)
+  return kedepan ?? urut[urut.length - 1]
+}
 
 /**
  * Semua hari yang ditempati sebuah kegiatan, dari mulai sampai selesai.

@@ -133,6 +133,46 @@ export const Events: CollectionConfig<'events'> = {
               ],
             },
             {
+              type: 'row',
+              fields: [
+                {
+                  name: 'link_pendaftaran',
+                  type: 'text',
+                  label: 'Link Pendaftaran',
+                  admin: {
+                    width: '60%',
+                    description:
+                      'URL form pendaftaran (mis. Google Form). Tombol "Daftar Sekarang" tampil selama pendaftaran masih buka.',
+                    // Hanya relevan sebelum kegiatan berakhir.
+                    condition: (data) => {
+                      const akhir = data?.tanggal_selesai || data?.tanggal_mulai
+                      return akhir ? new Date(akhir).getTime() >= Date.now() : true
+                    },
+                  },
+                  validate: (value: string | null | undefined) => {
+                    if (!value) return true
+                    return /^https?:\/\//.test(value)
+                      ? true
+                      : 'Link harus diawali http:// atau https://'
+                  },
+                },
+                {
+                  name: 'pendaftaran_tutup',
+                  type: 'date',
+                  label: 'Pendaftaran Ditutup',
+                  admin: {
+                    width: '40%',
+                    date: { pickerAppearance: 'dayAndTime' },
+                    description: 'Opsional. Kalau kosong, dianggap tutup saat kegiatan mulai.',
+                    condition: (data) => {
+                      const akhir = data?.tanggal_selesai || data?.tanggal_mulai
+                      return akhir ? new Date(akhir).getTime() >= Date.now() : true
+                    },
+                  },
+                },
+              ],
+            },
+            {
               name: 'deskripsi',
               type: 'richText',
               required: true,

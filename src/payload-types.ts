@@ -413,6 +413,41 @@ export interface Category {
   id: number;
   title: string;
   /**
+   * Opsional. Tampil di bawah judul seksi pada halaman Berita.
+   */
+  deskripsi?: string | null;
+  /**
+   * Ikon di sebelah judul seksi kategori pada halaman Berita.
+   */
+  ikon?:
+    | (
+        | 'anggota'
+        | 'komunikasi'
+        | 'teknologi'
+        | 'wirausaha'
+        | 'minat-bakat'
+        | 'sosial'
+        | 'kalender'
+        | 'divisi'
+        | 'prestasi'
+        | 'bintang'
+        | 'roket'
+        | 'buku'
+        | 'kode'
+        | 'kamera'
+        | 'akademik'
+        | 'berita'
+      )
+    | null;
+  /**
+   * Kalau dicentang, kategori ini punya blok tersendiri di halaman Berita. Kalau tidak, hanya jadi label pada kartu.
+   */
+  seksi?: boolean | null;
+  /**
+   * Angka kecil tampil lebih dulu.
+   */
+  urutan?: number | null;
+  /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
@@ -810,6 +845,14 @@ export interface Event {
    * Harga tiket masuk per peserta, angka saja tanpa titik.
    */
   htm?: number | null;
+  /**
+   * URL form pendaftaran (mis. Google Form). Tombol "Daftar Sekarang" tampil selama pendaftaran masih buka.
+   */
+  link_pendaftaran?: string | null;
+  /**
+   * Opsional. Kalau kosong, dianggap tutup saat kegiatan mulai.
+   */
+  pendaftaran_tutup?: string | null;
   deskripsi: {
     root: {
       type: string;
@@ -898,6 +941,8 @@ export interface Divisi {
         | 'buku'
         | 'kode'
         | 'kamera'
+        | 'akademik'
+        | 'berita'
       )
     | null;
   /**
@@ -1500,6 +1545,8 @@ export interface EventsSelect<T extends boolean = true> {
   lokasi?: T;
   gratis?: T;
   htm?: T;
+  link_pendaftaran?: T;
+  pendaftaran_tutup?: T;
   deskripsi?: T;
   link_dokumentasi?: T;
   recap?: T;
@@ -1674,6 +1721,10 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
+  deskripsi?: T;
+  ikon?: T;
+  seksi?: T;
+  urutan?: T;
   generateSlug?: T;
   slug?: T;
   parent?: T;
@@ -2194,6 +2245,8 @@ export interface SiteSetting {
               | 'buku'
               | 'kode'
               | 'kamera'
+              | 'akademik'
+              | 'berita'
             )
           | null;
         /**
