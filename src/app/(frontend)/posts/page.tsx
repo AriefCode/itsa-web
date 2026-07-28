@@ -35,8 +35,11 @@ export default async function BeritaPage() {
   ])
 
   // Unggulan: berita Prestasi dulu, dilengkapi berita terbaru lain sampai 4.
-  const prestasi = posts.filter((p) => punyaKategori(p, 2))
-  const sisanya = posts.filter((p) => !punyaKategori(p, 2))
+  // ID kategori dicari dari judul, bukan di-hardcode, supaya tetap benar walau
+  // datanya diisi ulang dan id-nya berganti.
+  const prestasiId = kategori.find((k) => k.title.toLowerCase() === 'prestasi')?.id
+  const prestasi = prestasiId ? posts.filter((p) => punyaKategori(p, prestasiId)) : []
+  const sisanya = prestasiId ? posts.filter((p) => !punyaKategori(p, prestasiId)) : posts
   const unggulan = [...prestasi, ...sisanya].slice(0, 4)
 
   return (

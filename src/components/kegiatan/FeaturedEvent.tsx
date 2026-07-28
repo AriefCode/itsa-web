@@ -24,6 +24,7 @@ export const FeaturedEvent: React.FC<{ event: Event }> = ({ event }) => {
   const mulai = new Date(event.tanggal_mulai).getTime()
   const selesai = new Date(event.tanggal_selesai || event.tanggal_mulai).getTime()
   const sedang = mulai <= now && now <= selesai
+  const usai = now > selesai
   const buka = pendaftaranBuka(event)
 
   // Hitung mundur diarahkan ke hal yang paling berguna: batas pendaftaran kalau
@@ -63,11 +64,13 @@ export const FeaturedEvent: React.FC<{ event: Event }> = ({ event }) => {
             className={
               sedang
                 ? 'inline-flex w-fit items-center gap-1.5 rounded bg-gold px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-forest'
-                : 'inline-flex w-fit items-center gap-1.5 rounded border border-gold/60 px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-gold'
+                : usai
+                  ? 'inline-flex w-fit items-center gap-1.5 rounded border border-cream/25 px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-mist'
+                  : 'inline-flex w-fit items-center gap-1.5 rounded border border-gold/60 px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-gold'
             }
           >
             {sedang && <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-forest" />}
-            {sedang ? 'Sedang Berlangsung' : 'Akan Datang'}
+            {sedang ? 'Sedang Berlangsung' : usai ? 'Selesai' : 'Akan Datang'}
           </span>
 
           <h2 className="mt-3 font-heading text-2xl font-bold leading-tight text-cream sm:text-3xl">
