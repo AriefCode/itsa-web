@@ -919,6 +919,10 @@ export interface Divisi {
   id: number;
   nama: string;
   /**
+   * Foto kebersamaan divisi. Tampil sebagai latar kartu divisi & sorotan departemen di halaman Kabinet. Rasio lanskap (mis. 3:2) paling pas.
+   */
+  foto_grup?: (number | null) | Media;
+  /**
    * Satu-dua kalimat, tampil di bawah judul divisi pada halaman Kabinet & beranda.
    */
   deskripsi_singkat: string;
@@ -1588,6 +1592,7 @@ export interface PengurusSelect<T extends boolean = true> {
  */
 export interface DivisiSelect<T extends boolean = true> {
   nama?: T;
+  foto_grup?: T;
   deskripsi_singkat?: T;
   ikon?: T;
   urutan?: T;
@@ -2193,6 +2198,21 @@ export interface SiteSetting {
     kartu_judul?: string | null;
     kartu_teks?: string | null;
   };
+  kabinet?: {
+    /**
+     * Foto kebersamaan/panitia lengkap, ditampilkan bergantian sebagai carousel di hero Kabinet. Rasio lanskap (16:9). Kalau kosong, hero memakai mozaik foto pengurus.
+     */
+    foto_hero?:
+      | {
+          gambar: number | Media;
+          /**
+           * Opsional. Teks kecil di pojok foto.
+           */
+          keterangan?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   sosial?: {
     /**
      * Username saja, tanpa @. Contoh: itsa.pcr
@@ -2355,6 +2375,17 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         gambar?: T;
         kartu_judul?: T;
         kartu_teks?: T;
+      };
+  kabinet?:
+    | T
+    | {
+        foto_hero?:
+          | T
+          | {
+              gambar?: T;
+              keterangan?: T;
+              id?: T;
+            };
       };
   sosial?:
     | T

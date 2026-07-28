@@ -53,6 +53,7 @@ export const Divisi: CollectionConfig<'divisi'> = {
     urutan: true,
     deskripsi_singkat: true,
     ikon: true,
+    foto_grup: true,
   },
   fields: [
     {
@@ -60,6 +61,16 @@ export const Divisi: CollectionConfig<'divisi'> = {
       type: 'text',
       required: true,
       label: 'Nama Divisi',
+    },
+    {
+      name: 'foto_grup',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Foto Grup Divisi',
+      admin: {
+        description:
+          'Foto kebersamaan divisi. Tampil sebagai latar kartu divisi & sorotan departemen di halaman Kabinet. Rasio lanskap (mis. 3:2) paling pas.',
+      },
     },
     {
       name: 'deskripsi_singkat',

@@ -3,9 +3,12 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import React from 'react'
 
-import type { Divisi } from '@/payload-types'
+import type { Divisi, Media } from '@/payload-types'
 import { HeroKabinet } from '@/components/kabinet/HeroKabinet'
+import { StatKabinet } from '@/components/kabinet/StatKabinet'
 import { KabinetBrowser, type Kelompok } from '@/components/kabinet/KabinetBrowser'
+import { CtaKabinet } from '@/components/kabinet/CtaKabinet'
+import type { FotoHero } from '@/components/kabinet/HeroCarousel'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -31,12 +34,13 @@ export default async function KabinetPage({ searchParams }: Args) {
   const payload = await getPayload({ config: configPromise })
   const sp = await searchParams
 
-  const { docs: semua } = await payload.find({
-    collection: 'pengurus',
-    limit: 500,
-    depth: 1,
-    sort: 'urutan',
-  })
+  // Divisi diambil terpisah dengan depth 1 supaya `foto_grup` ikut terisi
+  // sebagai objek Media (lewat relasi Pengurus, upload-nya cuma jadi id).
+  const [{ docs: semua }, { docs: divisiSemua }, settings] = await Promise.all([
+    payload.find({ collection: 'pengurus', limit: 500, depth: 1, sort: 'urutan' }),
+    payload.find({ collection: 'divisi', limit: 100, depth: 1, sort: 'urutan' }),
+    payload.findGlobal({ slug: 'site-settings', depth: 1 }),
+  ])
 
   // Periode terbaru lebih dulu. Format "2026/2027" aman diurutkan sebagai teks.
   const periodeTersedia = [...new Set(semua.map((p) => p.periode))].sort().reverse()
@@ -45,42 +49,42 @@ export default async function KabinetPage({ searchParams }: Args) {
 
   const anggota = semua.filter((p) => p.periode === periodeAktif)
 
-  const urutanDivisi = (d: Divisi | null) => d?.urutan ?? 999
+  // Kelompokkan anggota per divisi memakai objek Divisi berdepth 1. Divisi
+  // yang belum punya pengurus di periode ini dilewati.
+  const anggotaDivisi = (id: number) =>
+    anggota
+      .filter((p) => {
+        const div = p.divisi
+        const idDiv = typeof div === 'object' && div ? div.id : div
+        return idDiv === id
+      })
+      .sort((a, b) => (a.urutan ?? 999) - (b.urutan ?? 999) || a.nama.localeCompare(b.nama, 'id'))
 
-  // Kelompokkan per divisi. Divisi tanpa objek relasi (data belum lengkap)
-  // dilewati ketimbang membuat kartu divisi tanpa nama.
-  const peta = new Map<number | string, Kelompok>()
-  for (const p of anggota) {
-    const div = p.divisi && typeof p.divisi === 'object' ? p.divisi : null
-    if (!div) continue
-    const ada = peta.get(div.id)
-    if (ada) ada.anggota.push(p)
-    else peta.set(div.id, { divisi: div, anggota: [p] })
-  }
-
-  const kelompok = [...peta.values()]
-    .map((k) => ({
-      ...k,
-      anggota: [...k.anggota].sort(
-        (a, b) => (a.urutan ?? 999) - (b.urutan ?? 999) || a.nama.localeCompare(b.nama, 'id'),
-      ),
-    }))
+  const kelompok: Kelompok[] = divisiSemua
+    .map((divisi: Divisi) => ({ divisi, anggota: anggotaDivisi(divisi.id) }))
+    .filter((k) => k.anggota.length > 0)
     .sort(
       (a, b) =>
-        urutanDivisi(a.divisi) - urutanDivisi(b.divisi) ||
-        // Divisi dengan angka urutan sama diurutkan alfabetis agar susunannya
-        // tetap sama di tiap render, tidak bergantung urutan dari database.
+        (a.divisi.urutan ?? 999) - (b.divisi.urutan ?? 999) ||
         a.divisi.nama.localeCompare(b.divisi.nama, 'id'),
     )
 
+  // Foto sorotan hero (dari Pengaturan Situs). Hanya yang gambarnya terisi.
+  const fotoHero: FotoHero[] = ((settings as { kabinet?: { foto_hero?: unknown[] } })?.kabinet
+    ?.foto_hero ?? [])
+    .map((f) => f as { gambar?: number | Media; keterangan?: string | null })
+    .filter((f): f is { gambar: Media; keterangan?: string | null } => typeof f.gambar === 'object')
+
   return (
-    <main className="bg-forest">
+    <main className="overflow-x-clip bg-forest">
       <HeroKabinet
         anggota={anggota}
-        jumlahDivisi={kelompok.length}
+        fotoHero={fotoHero}
         periodeAktif={periodeAktif}
         periodeTersedia={periodeTersedia}
       />
+
+      <StatKabinet jumlahPengurus={anggota.length} jumlahDivisi={kelompok.length} />
 
       <div className="container py-12 sm:py-16">
         {kelompok.length === 0 ? (
@@ -91,6 +95,8 @@ export default async function KabinetPage({ searchParams }: Args) {
           <KabinetBrowser kelompok={kelompok} />
         )}
       </div>
+
+      <CtaKabinet />
     </main>
   )
 }

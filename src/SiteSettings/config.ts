@@ -136,6 +136,45 @@ export const SiteSettings: GlobalConfig = {
           ],
         },
         {
+          label: 'Kabinet',
+          description: 'Foto yang tampil bergantian di bagian atas halaman Kabinet.',
+          fields: [
+            {
+              name: 'kabinet',
+              type: 'group',
+              label: false,
+              fields: [
+                {
+                  name: 'foto_hero',
+                  type: 'array',
+                  label: 'Foto Sorotan Kabinet',
+                  labels: { singular: 'Foto', plural: 'Foto' },
+                  maxRows: 8,
+                  admin: {
+                    description:
+                      'Foto kebersamaan/panitia lengkap, ditampilkan bergantian sebagai carousel di hero Kabinet. Rasio lanskap (16:9). Kalau kosong, hero memakai mozaik foto pengurus.',
+                  },
+                  fields: [
+                    {
+                      name: 'gambar',
+                      type: 'upload',
+                      relationTo: 'media',
+                      required: true,
+                      label: 'Foto',
+                    },
+                    {
+                      name: 'keterangan',
+                      type: 'text',
+                      label: 'Keterangan',
+                      admin: { description: 'Opsional. Teks kecil di pojok foto.' },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
           label: 'Media Sosial',
           description: 'Kosongkan yang tidak dipakai — ikonnya tidak akan tampil di footer.',
           fields: [

@@ -35,7 +35,7 @@ export const KaruselAnggota: React.FC<{
         {anggota.map((p, i) => (
           <li
             key={p.id}
-            className="w-[78%] shrink-0 snap-start sm:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-3rem)/4)]"
+            className="w-[13rem] shrink-0 snap-start sm:w-[14rem]"
           >
             <KartuPengurus pengurus={p} onBuka={onBuka} indeks={i} />
           </li>
