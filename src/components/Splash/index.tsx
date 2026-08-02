@@ -28,11 +28,17 @@ const KUNCI_SESI = 'itsa-splash-sudah-tampil'
 const SUMBER_VIDEO = '/splashItsa.mp4'
 /** Jaring pengaman: overlay ditutup paksa kalau video macet tidak sampai selesai. */
 const BATAS_TAMPIL_MS = 12000
+/** Lama animasi keluar overlay — harus sama dengan `.splash-keluar` di globals.css. */
+const DURASI_KELUAR_MS = 700
 
 export const Splash: React.FC = () => {
   // Mulai dari false supaya render server dan klien sama (tidak ada hydration
   // mismatch); baru diputuskan di efek setelah sessionStorage terbaca.
   const [tampil, setTampil] = useState(false)
+  // Fase transisi keluar: overlay masih ada tapi sedang beranimasi menghilang
+  // sementara konten di baliknya "mendarat". Dipisah dari `tampil` supaya
+  // overlay tidak langsung lenyap (potongan keras) begitu splash selesai.
+  const [menutup, setMenutup] = useState(false)
   const [bisu, setBisu] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const tombolRef = useRef<HTMLButtonElement>(null)
@@ -59,14 +65,36 @@ export const Splash: React.FC = () => {
     }
   }, [bisu])
 
-  const tutup = useCallback(() => {
+  // Guard supaya penutupan tidak terpicu dua kali (mis. Esc lalu video selesai
+  // berbarengan). Ref, bukan state, biar sinkron dalam satu event.
+  const menutupRef = useRef(false)
+
+  /** Benar-benar melepas overlay & mencatat sesi setelah animasi keluar usai. */
+  const selesaikanTutup = useCallback(() => {
     setTampil(false)
+    document.documentElement.classList.remove('splash-tahan', 'splash-buka')
     try {
       sessionStorage.setItem(KUNCI_SESI, '1')
     } catch {
       // Mode privat bisa melarang sessionStorage. Splash tetap tertutup.
     }
   }, [])
+
+  /**
+   * Memulai transisi keluar: overlay memudar + membesar tipis (`.splash-keluar`)
+   * sementara konten di baliknya naik-memudar (`splash-buka`). Overlay baru
+   * benar-benar dilepas setelah `DURASI_KELUAR_MS`. Dipanggil dari tombol
+   * Lewati, akhir video, tombol Esc, dan jaring pengaman waktu.
+   */
+  const mulaiTutup = useCallback(() => {
+    if (menutupRef.current) return
+    menutupRef.current = true
+    const html = document.documentElement
+    html.classList.remove('splash-tahan')
+    html.classList.add('splash-buka')
+    setMenutup(true)
+    window.setTimeout(selesaikanTutup, DURASI_KELUAR_MS)
+  }, [selesaikanTutup])
 
   useEffect(() => {
     let batal = false
@@ -82,7 +110,12 @@ export const Splash: React.FC = () => {
     // Pastikan file videonya benar-benar ada sebelum menutupi layar.
     fetch(SUMBER_VIDEO, { method: 'HEAD' })
       .then((r) => {
-        if (!batal && r.ok) setTampil(true)
+        if (!batal && r.ok) {
+          // Tahan konten tak terlihat lebih dulu, lalu tampilkan overlay —
+          // supaya reveal saat splash terangkat terasa (konten mendarat).
+          document.documentElement.classList.add('splash-tahan')
+          setTampil(true)
+        }
       })
       .catch(() => {
         /* aset tidak ada: jangan tampilkan apa pun */
@@ -90,6 +123,10 @@ export const Splash: React.FC = () => {
 
     return () => {
       batal = true
+      // Jaga-jaga kalau komponen dilepas selagi konten masih ditahan.
+      if (!menutupRef.current) {
+        document.documentElement.classList.remove('splash-tahan', 'splash-buka')
+      }
     }
   }, [])
 
@@ -98,27 +135,29 @@ export const Splash: React.FC = () => {
     document.body.style.overflow = 'hidden'
     tombolRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') tutup()
+      if (e.key === 'Escape') mulaiTutup()
     }
     window.addEventListener('keydown', onKey)
 
     // Kalau video gagal diputar tanpa memicu error (mis. autoplay diblokir
     // browser), tidak ada yang pernah menutup overlay. Batas waktu ini
     // memastikan pengunjung tidak terkunci di layar splash.
-    const pengaman = window.setTimeout(tutup, BATAS_TAMPIL_MS)
+    const pengaman = window.setTimeout(mulaiTutup, BATAS_TAMPIL_MS)
 
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
       window.clearTimeout(pengaman)
     }
-  }, [tampil, tutup])
+  }, [tampil, mulaiTutup])
 
   if (!tampil) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-forest"
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-forest ${
+        menutup ? 'splash-keluar pointer-events-none' : ''
+      }`}
       role="dialog"
       aria-modal="true"
       aria-label="Intro ITSA"
@@ -130,8 +169,8 @@ export const Splash: React.FC = () => {
         autoPlay
         muted={bisu}
         playsInline
-        onEnded={tutup}
-        onError={tutup}
+        onEnded={mulaiTutup}
+        onError={mulaiTutup}
       />
 
       <div className="absolute bottom-8 right-6 flex items-center gap-2 sm:bottom-10 sm:right-10">
@@ -152,7 +191,7 @@ export const Splash: React.FC = () => {
         <button
           ref={tombolRef}
           type="button"
-          onClick={tutup}
+          onClick={mulaiTutup}
           className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-forest transition-transform hover:brightness-105 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
         >
           Lewati
