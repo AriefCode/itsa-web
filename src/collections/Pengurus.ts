@@ -14,6 +14,9 @@ import {
  * Satu dokumen = satu orang pada satu periode. Kalau orang yang sama menjabat
  * lagi di periode berikutnya, buat dokumen baru; dengan begitu kabinet lama
  * tetap utuh dan bisa ditampilkan sebagai arsip.
+ *
+ * PERIODE diwarisi dari Divisi (tiap Divisi milik satu Periode), jadi tidak
+ * perlu diisi manual di sini — pilih Divisi yang benar, periode ikut otomatis.
  */
 export const Pengurus: CollectionConfig<'pengurus'> = {
   hooks: {
@@ -33,7 +36,7 @@ export const Pengurus: CollectionConfig<'pengurus'> = {
   },
   admin: {
     useAsTitle: 'nama',
-    defaultColumns: ['nama', 'jabatan', 'divisi', 'angkatan', 'periode'],
+    defaultColumns: ['nama', 'jabatan', 'divisi', 'angkatan'],
     description: 'Anggota kepengurusan. Tampil di halaman Kabinet, dikelompokkan per divisi.',
   },
   // Grid Kabinet diurutkan berdasarkan divisi lalu urutan jabatan.
@@ -96,14 +99,21 @@ export const Pengurus: CollectionConfig<'pengurus'> = {
       },
     },
     {
+      // USANG: periode kini diturunkan dari Divisi (lihat catatan di atas file).
+      // Field ini disembunyikan dari admin dan tidak lagi dipakai frontend, tapi
+      // KOLOMNYA sengaja dipertahankan agar tidak memicu migrasi destruktif
+      // (drop kolom = prompt "DATA LOSS" yang menggantungkan dev server).
+      // `defaultValue` + `hidden` membuat pembuatan Pengurus baru tetap jalan
+      // tanpa perlu mengisinya. Aman dihapus total di pembersihan terpisah.
       name: 'periode',
       type: 'text',
       required: true,
-      label: 'Periode',
+      label: 'Periode (usang)',
       defaultValue: String(new Date().getFullYear()),
       admin: {
+        hidden: true,
         position: 'sidebar',
-        description: 'Contoh: 2025 atau 2025/2026. Dipakai untuk memisahkan kabinet antar tahun.',
+        description: 'Tidak dipakai lagi — periode mengikuti Divisi.',
       },
     },
     {

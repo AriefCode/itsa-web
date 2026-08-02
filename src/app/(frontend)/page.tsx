@@ -70,7 +70,9 @@ export default async function HomePage() {
       },
     }),
     payload.find({ collection: 'faq', limit: 4, sort: 'urutan' }),
-    payload.find({ collection: 'divisi', limit: 8, sort: 'urutan' }),
+    // depth 1 supaya relasi `periode` ikut terisi — dipakai untuk menyaring ke
+    // kabinet yang sedang aktif (struktur divisi bisa beda tiap tahun).
+    payload.find({ collection: 'divisi', limit: 100, depth: 1, sort: 'urutan' }),
     // Galeri momen diambil otomatis dari thumbnail kegiatan terbaru yang punya
     // foto, jadi tidak perlu koleksi galeri terpisah.
     payload.find({
@@ -100,6 +102,14 @@ export default async function HomePage() {
 
   const tentang = settings?.tentang
 
+  // Tampilkan divisi dari kabinet yang aktif saja. Kalau belum ada yang ditandai
+  // aktif (mis. data lama), jatuh ke semua divisi supaya section tidak kosong.
+  const divisiAktif = divisi.docs.filter((d) => {
+    const per = d.periode
+    return typeof per === 'object' && per !== null && per.aktif === true
+  })
+  const divisiTampil = (divisiAktif.length > 0 ? divisiAktif : divisi.docs).slice(0, 8)
+
   return (
     <main>
       <Hero
@@ -119,7 +129,7 @@ export default async function HomePage() {
       />
       <HighlightKegiatan events={selesai.docs} />
       <KegiatanMendatang events={mendatang.docs} />
-      <DivisiRingkas divisi={divisi.docs} />
+      <DivisiRingkas divisi={divisiTampil} />
       <GaleriMomen foto={galeri} />
       <FaqRingkas faq={faq.docs} />
       <CtaAspirasi />

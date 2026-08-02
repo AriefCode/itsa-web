@@ -70,6 +70,7 @@ export interface Config {
     pages: Page;
     posts: Post;
     events: Event;
+    periode: Periode;
     pengurus: Pengurus;
     divisi: Divisi;
     faq: Faq;
@@ -97,6 +98,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
+    periode: PeriodeSelect<false> | PeriodeSelect<true>;
     pengurus: PengurusSelect<false> | PengurusSelect<true>;
     divisi: DivisiSelect<false> | DivisiSelect<true>;
     faq: FaqSelect<false> | FaqSelect<true>;
@@ -437,6 +439,7 @@ export interface Category {
         | 'kamera'
         | 'akademik'
         | 'berita'
+        | 'sejak'
       )
     | null;
   /**
@@ -917,6 +920,10 @@ export interface Event {
  */
 export interface Divisi {
   id: number;
+  /**
+   * Kabinet tahun mana divisi ini berada. Wajib dipilih.
+   */
+  periode?: (number | null) | Periode;
   nama: string;
   /**
    * Foto kebersamaan divisi. Tampil sebagai latar kartu divisi & sorotan departemen di halaman Kabinet. Rasio lanskap (mis. 3:2) paling pas.
@@ -947,12 +954,45 @@ export interface Divisi {
         | 'kamera'
         | 'akademik'
         | 'berita'
+        | 'sejak'
       )
     | null;
   /**
    * Angka kecil tampil lebih dulu. Divisi inti biasanya 1, 2, 3, ...
    */
   urutan: number;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Tahun kepengurusan. Buat satu untuk tiap periode; tandai yang sedang berjalan sebagai Aktif.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "periode".
+ */
+export interface Periode {
+  id: number;
+  /**
+   * Contoh: 2025/2026. Ini yang tampil sebagai judul kabinet.
+   */
+  label: string;
+  /**
+   * Contoh: 2025. Dipakai untuk mengurutkan periode (terbaru dulu).
+   */
+  tahun_mulai: number;
+  /**
+   * Centang HANYA pada periode yang sedang berjalan. Ini yang tampil default di halaman Kabinet.
+   */
+  aktif?: boolean | null;
+  /**
+   * Opsional. Motto atau tema kabinet periode ini. Tampil di bawah judul.
+   */
+  tagline?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -984,7 +1024,7 @@ export interface Pengurus {
    */
   angkatan?: number | null;
   /**
-   * Contoh: 2025 atau 2025/2026. Dipakai untuk memisahkan kabinet antar tahun.
+   * Tidak dipakai lagi — periode mengikuti Divisi.
    */
   periode: string;
   /**
@@ -1283,6 +1323,10 @@ export interface PayloadLockedDocument {
         value: number | Event;
       } | null)
     | ({
+        relationTo: 'periode';
+        value: number | Periode;
+      } | null)
+    | ({
         relationTo: 'pengurus';
         value: number | Pengurus;
       } | null)
@@ -1566,6 +1610,20 @@ export interface EventsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "periode_select".
+ */
+export interface PeriodeSelect<T extends boolean = true> {
+  label?: T;
+  tahun_mulai?: T;
+  aktif?: T;
+  tagline?: T;
+  generateSlug?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pengurus_select".
  */
 export interface PengurusSelect<T extends boolean = true> {
@@ -1591,6 +1649,7 @@ export interface PengurusSelect<T extends boolean = true> {
  * via the `definition` "divisi_select".
  */
 export interface DivisiSelect<T extends boolean = true> {
+  periode?: T;
   nama?: T;
   foto_grup?: T;
   deskripsi_singkat?: T;
@@ -2267,6 +2326,7 @@ export interface SiteSetting {
               | 'kamera'
               | 'akademik'
               | 'berita'
+              | 'sejak'
             )
           | null;
         /**

@@ -12,6 +12,7 @@ import { Faq } from './collections/Faq'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Pengurus } from './collections/Pengurus'
+import { Periode } from './collections/Periode'
 import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Footer } from './Footer/config'
@@ -74,6 +75,7 @@ export default buildConfig({
     Pages,
     Posts,
     Events,
+    Periode,
     Pengurus,
     Divisi,
     Faq,

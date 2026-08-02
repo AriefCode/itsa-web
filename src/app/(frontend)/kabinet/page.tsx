@@ -26,31 +26,48 @@ type Args = { searchParams: Promise<{ periode?: string }> }
  * divisi, tidak ada lagi daftar panjang yang perlu dipotong — dan memotongnya
  * justru merusak pengelompokan, karena satu divisi bisa terbelah dua halaman.
  *
- * Satu dokumen Pengurus mewakili satu orang pada satu periode, jadi halaman
- * ini menampilkan satu periode saja. Pemilih periode baru muncul kalau memang
- * sudah ada lebih dari satu kabinet.
+ * Struktur organisasi bisa berbeda tiap tahun: tiap Divisi milik satu Periode,
+ * dan Pengurus menempel ke Divisi. Halaman ini menampilkan periode `aktif`
+ * secara default; periode lain dibuka lewat `?periode=<slug>` (bisa dibagikan).
+ * Pemilih periode baru muncul kalau memang sudah ada lebih dari satu kabinet.
  */
 export default async function KabinetPage({ searchParams }: Args) {
   const payload = await getPayload({ config: configPromise })
   const sp = await searchParams
 
-  // Divisi diambil terpisah dengan depth 1 supaya `foto_grup` ikut terisi
-  // sebagai objek Media (lewat relasi Pengurus, upload-nya cuma jadi id).
-  const [{ docs: semua }, { docs: divisiSemua }, settings] = await Promise.all([
-    payload.find({ collection: 'pengurus', limit: 500, depth: 1, sort: 'urutan' }),
-    payload.find({ collection: 'divisi', limit: 100, depth: 1, sort: 'urutan' }),
-    payload.findGlobal({ slug: 'site-settings', depth: 1 }),
-  ])
+  // Divisi diambil dengan depth 1 supaya `foto_grup` (Media) dan `periode`
+  // ikut terisi sebagai objek, bukan sekadar id.
+  const [{ docs: pengurusSemua }, { docs: divisiSemua }, { docs: periodeDocs }, settings] =
+    await Promise.all([
+      payload.find({ collection: 'pengurus', limit: 500, depth: 1, sort: 'urutan' }),
+      payload.find({ collection: 'divisi', limit: 200, depth: 1, sort: 'urutan' }),
+      payload.find({ collection: 'periode', limit: 100, sort: '-tahun_mulai' }),
+      payload.findGlobal({ slug: 'site-settings', depth: 1 }),
+    ])
 
-  // Periode terbaru lebih dulu. Format "2026/2027" aman diurutkan sebagai teks.
-  const periodeTersedia = [...new Set(semua.map((p) => p.periode))].sort().reverse()
-  const periodeAktif =
-    sp.periode && periodeTersedia.includes(sp.periode) ? sp.periode : periodeTersedia[0]
+  // Periode terpilih: dari URL (slug) kalau valid > yang ditandai aktif > terbaru.
+  const periodeDipilih =
+    (sp.periode && periodeDocs.find((p) => p.slug === sp.periode)) ||
+    periodeDocs.find((p) => p.aktif) ||
+    periodeDocs[0]
+  const idPeriode = periodeDipilih?.id
 
-  const anggota = semua.filter((p) => p.periode === periodeAktif)
+  // Hanya divisi milik periode terpilih — inilah yang membuat tiap tahun bisa
+  // punya susunan divisi sendiri.
+  const divisiPeriode = divisiSemua.filter((d) => {
+    const per = d.periode
+    const idPer = typeof per === 'object' && per ? per.id : per
+    return idPer != null && idPer === idPeriode
+  })
+  const idDivisiPeriode = new Set(divisiPeriode.map((d) => d.id))
 
-  // Kelompokkan anggota per divisi memakai objek Divisi berdepth 1. Divisi
-  // yang belum punya pengurus di periode ini dilewati.
+  // Pengurus yang divisinya termasuk periode ini (periode diwarisi dari divisi).
+  const anggota = pengurusSemua.filter((p) => {
+    const div = p.divisi
+    const idDiv = typeof div === 'object' && div ? div.id : div
+    return typeof idDiv === 'number' && idDivisiPeriode.has(idDiv)
+  })
+
   const anggotaDivisi = (id: number) =>
     anggota
       .filter((p) => {
@@ -60,7 +77,7 @@ export default async function KabinetPage({ searchParams }: Args) {
       })
       .sort((a, b) => (a.urutan ?? 999) - (b.urutan ?? 999) || a.nama.localeCompare(b.nama, 'id'))
 
-  const kelompok: Kelompok[] = divisiSemua
+  const kelompok: Kelompok[] = divisiPeriode
     .map((divisi: Divisi) => ({ divisi, anggota: anggotaDivisi(divisi.id) }))
     .filter((k) => k.anggota.length > 0)
     .sort(
@@ -68,6 +85,9 @@ export default async function KabinetPage({ searchParams }: Args) {
         (a.divisi.urutan ?? 999) - (b.divisi.urutan ?? 999) ||
         a.divisi.nama.localeCompare(b.divisi.nama, 'id'),
     )
+
+  // Daftar periode untuk pemilih di hero (terbaru dulu, ikut urutan query).
+  const periodeTersedia = periodeDocs.map((p) => ({ label: p.label, slug: p.slug }))
 
   // Foto sorotan hero (dari Pengaturan Situs). Hanya yang gambarnya terisi.
   const fotoHero: FotoHero[] = ((settings as { kabinet?: { foto_hero?: unknown[] } })?.kabinet
@@ -80,7 +100,15 @@ export default async function KabinetPage({ searchParams }: Args) {
       <HeroKabinet
         anggota={anggota}
         fotoHero={fotoHero}
-        periodeAktif={periodeAktif}
+        periodeAktif={
+          periodeDipilih
+            ? {
+                label: periodeDipilih.label,
+                slug: periodeDipilih.slug,
+                tagline: periodeDipilih.tagline,
+              }
+            : undefined
+        }
         periodeTersedia={periodeTersedia}
       />
 

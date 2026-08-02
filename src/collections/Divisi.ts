@@ -54,8 +54,26 @@ export const Divisi: CollectionConfig<'divisi'> = {
     deskripsi_singkat: true,
     ikon: true,
     foto_grup: true,
+    periode: true,
   },
   fields: [
+    {
+      name: 'periode',
+      type: 'relationship',
+      relationTo: 'periode',
+      // Tidak diberi `required: true` supaya kolomnya TIDAK jadi NOT NULL —
+      // menambah kolom NOT NULL ke tabel yang sudah berisi data menggantungkan
+      // dev server di prompt "DATA LOSS WARNING" (lihat catatan sama di
+      // Pengurus.angkatan). Kewajiban diisi ditegakkan lewat `validate` di sisi
+      // admin, bukan lewat constraint database.
+      label: 'Periode',
+      admin: {
+        position: 'sidebar',
+        description: 'Kabinet tahun mana divisi ini berada. Wajib dipilih.',
+      },
+      validate: (value: unknown) =>
+        value ? true : 'Divisi harus menunjuk ke sebuah periode kepengurusan.',
+    },
     {
       name: 'nama',
       type: 'text',

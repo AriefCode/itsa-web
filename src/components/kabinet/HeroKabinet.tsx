@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import React from 'react'
-import { ChevronRight, Home, Info, Network } from 'lucide-react'
+import { ChevronRight, Home, Network } from 'lucide-react'
 
 import type { Media as MediaType, Pengurus } from '@/payload-types'
 import { HeroCarousel, type FotoHero } from './HeroCarousel'
@@ -9,11 +9,13 @@ import { MozaikKabinet } from './MozaikKabinet'
 const TOMBOL_DASAR =
   'inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition duration-200 active:scale-[0.98] motion-reduce:active:scale-100'
 
+export type PeriodeRingkas = { label: string; slug: string }
+
 export const HeroKabinet: React.FC<{
   anggota: Pengurus[]
   fotoHero: FotoHero[]
-  periodeAktif?: string
-  periodeTersedia: string[]
+  periodeAktif?: { label: string; slug: string; tagline?: string | null }
+  periodeTersedia: PeriodeRingkas[]
 }> = ({ anggota, fotoHero, periodeAktif, periodeTersedia }) => {
   const fotoPengurus = anggota
     .map((p) => p.foto)
@@ -55,24 +57,17 @@ export const HeroKabinet: React.FC<{
           </p>
           <h1 className="mt-3 font-heading text-4xl font-extrabold leading-[1.05] tracking-tight text-cream sm:text-5xl">
             Kabinet
-            {periodeAktif && <span className="block text-gold">{periodeAktif}</span>}
+            {periodeAktif && <span className="block text-gold">{periodeAktif.label}</span>}
           </h1>
           <p className="mt-4 max-w-[46ch] leading-relaxed text-mist">
-            Bersama, kami membangun ITSA yang solid, kolaboratif, dan berdampak untuk mahasiswa dan
-            lingkungan.
+            {periodeAktif?.tagline ||
+              'Bersama, kami membangun ITSA yang solid, kolaboratif, dan berdampak untuk mahasiswa dan lingkungan.'}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/about"
-              className={`${TOMBOL_DASAR} bg-gold text-forest shadow-sm hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream`}
-            >
-              <Info className="size-4" aria-hidden />
-              Tentang Kabinet
-            </Link>
-            <Link
               href="#departemen"
-              className={`${TOMBOL_DASAR} border border-cream/35 text-cream hover:border-cream/70 hover:bg-cream/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold`}
+              className={`${TOMBOL_DASAR} bg-gold text-forest shadow-sm hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream`}
             >
               <Network className="size-4" aria-hidden />
               Struktur Organisasi
@@ -91,11 +86,11 @@ export const HeroKabinet: React.FC<{
                 Periode
               </span>
               {periodeTersedia.map((per) => {
-                const aktif = per === periodeAktif
+                const aktif = per.slug === periodeAktif?.slug
                 return (
                   <Link
-                    key={per}
-                    href={`/kabinet?periode=${encodeURIComponent(per)}`}
+                    key={per.slug}
+                    href={`/kabinet?periode=${encodeURIComponent(per.slug)}`}
                     aria-current={aktif ? 'true' : undefined}
                     className={`rounded-lg px-3 py-1.5 font-aksen text-xs font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
                       aktif
@@ -103,7 +98,7 @@ export const HeroKabinet: React.FC<{
                         : 'border border-forest-line text-cream hover:bg-forest-elevated'
                     }`}
                   >
-                    {per}
+                    {per.label}
                   </Link>
                 )
               })}
