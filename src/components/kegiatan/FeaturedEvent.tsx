@@ -6,6 +6,7 @@ import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
 import { Countdown } from './Countdown'
 import { BadgeBiaya } from './KartuKegiatanBaris'
+import { BadgeStatus } from './BadgeStatus'
 import { formatRentang, pendaftaranBuka } from '@/utilities/kegiatan'
 import { ambilTeks, potongTeks } from '@/utilities/lexicalText'
 
@@ -60,18 +61,7 @@ export const FeaturedEvent: React.FC<{ event: Event }> = ({ event }) => {
         </div>
 
         <div className="flex flex-col justify-center p-6 sm:p-8">
-          <span
-            className={
-              sedang
-                ? 'inline-flex w-fit items-center gap-1.5 rounded bg-gold px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-forest'
-                : usai
-                  ? 'inline-flex w-fit items-center gap-1.5 rounded border border-cream/25 px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-mist'
-                  : 'inline-flex w-fit items-center gap-1.5 rounded border border-gold/60 px-2.5 py-1 font-aksen text-[11px] font-bold uppercase tracking-wider text-gold'
-            }
-          >
-            {sedang && <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-forest" />}
-            {sedang ? 'Sedang Berlangsung' : usai ? 'Selesai' : 'Akan Datang'}
-          </span>
+          <BadgeStatus event={event} />
 
           <h2 className="mt-3 font-heading text-2xl font-bold leading-tight text-cream sm:text-3xl">
             {event.judul}

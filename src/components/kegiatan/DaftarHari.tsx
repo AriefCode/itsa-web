@@ -4,7 +4,7 @@ import { ChevronRight, Clock, MapPin } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
-import { BadgeStatus } from './KartuKegiatanBaris'
+import { BadgeStatus } from './BadgeStatus'
 import { formatWaktu } from '@/utilities/kegiatan'
 
 /** Satu baris kegiatan ringkas untuk daftar hari terpilih. */

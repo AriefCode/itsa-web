@@ -4,23 +4,8 @@ import { ArrowUpRight, CalendarDays, MapPin } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
-import { formatRentang, sudahSelesai } from '@/utilities/kegiatan'
-
-/** Badge status (Selesai / Akan Datang) — dipakai lintas mode. */
-export const BadgeStatus: React.FC<{ event: Event }> = ({ event }) => {
-  const selesai = sudahSelesai(event)
-  return (
-    <span
-      className={
-        selesai
-          ? 'rounded bg-cream/15 px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-cream'
-          : 'rounded border border-gold/60 px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-gold'
-      }
-    >
-      {selesai ? 'Selesai' : 'Akan Datang'}
-    </span>
-  )
-}
+import { formatRentang } from '@/utilities/kegiatan'
+import { BadgeStatus } from './BadgeStatus'
 
 /** Badge biaya (Gratis / RpXX) — gold untuk berbayar, teks kalem untuk gratis. */
 export const BadgeBiaya: React.FC<{ event: Event }> = ({ event }) => {

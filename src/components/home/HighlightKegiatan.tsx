@@ -6,6 +6,7 @@ import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, MapPin } from 'luc
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
+import { BadgeStatus } from '@/components/kegiatan/BadgeStatus'
 
 const formatTanggal = (nilai?: string | null) =>
   nilai
@@ -85,9 +86,7 @@ export const HighlightKegiatan: React.FC<{ events: Event[] }> = ({ events }) => 
 
             <div className="flex flex-col p-6 sm:p-7">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-cream px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-forest">
-                  Selesai
-                </span>
+                <BadgeStatus event={event} />
                 {divisi && (
                   <span className="font-aksen text-[11px] uppercase tracking-wider text-mist">
                     {divisi}

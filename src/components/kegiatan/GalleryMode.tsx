@@ -6,7 +6,7 @@ import { CalendarDays, ChevronDown, MapPin } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
-import { BadgeStatus } from './KartuKegiatanBaris'
+import { BadgeStatus } from './BadgeStatus'
 import { formatRentang } from '@/utilities/kegiatan'
 
 const PER_HALAMAN = 9
@@ -32,7 +32,7 @@ const KartuGaleri: React.FC<{ event: Event }> = ({ event }) => {
       />
 
       <div className="absolute left-3 top-3">
-        <BadgeStatus event={event} />
+        <BadgeStatus event={event} varian="foto" />
       </div>
 
       <div className="relative translate-y-1 p-4 transition-transform duration-300 group-hover:translate-y-0">

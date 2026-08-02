@@ -4,6 +4,7 @@ import { ArrowUpRight, CalendarDays, MapPin } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
+import { BadgeStatus } from '@/components/kegiatan/BadgeStatus'
 
 const formatTanggal = (nilai?: string | null) =>
   nilai
@@ -44,9 +45,7 @@ export const KartuKegiatanFoto: React.FC<{ event: Event }> = ({ event }) => {
 
       {/* Badge status + harga */}
       <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
-        <span className="rounded bg-forest-deep/80 px-2 py-0.5 font-aksen text-[11px] font-medium uppercase tracking-wider text-cream backdrop-blur-sm">
-          Akan Datang
-        </span>
+        <BadgeStatus event={event} varian="foto" />
         {!event.gratis && typeof event.htm === 'number' ? (
           <span className="rounded bg-gold px-2 py-0.5 font-aksen text-[11px] font-bold tracking-wider text-forest">
             Rp{event.htm.toLocaleString('id-ID')}

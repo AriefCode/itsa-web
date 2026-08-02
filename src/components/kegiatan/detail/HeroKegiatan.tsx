@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import React from 'react'
-import { CalendarDays, CheckCircle2, ChevronRight, Clock3, MapPin, Tag } from 'lucide-react'
+import { CalendarDays, ChevronRight, MapPin, Tag } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
 import { formatBiaya, formatRentang, sudahSelesai } from '@/utilities/kegiatan'
 import { AksiKegiatan, type Poster } from './AksiKegiatan'
+import { BadgeStatus } from '../BadgeStatus'
 
 /** Satu keping metadata di hero: ikon gold di dalam kotak bergaris. */
 const Keping: React.FC<{ Icon: typeof MapPin; children: React.ReactNode }> = ({
@@ -81,16 +82,7 @@ export const HeroKegiatan: React.FC<{ event: Event; poster: Poster }> = ({ event
         </nav>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          <span
-            className={
-              selesai
-                ? 'inline-flex items-center gap-1.5 rounded-lg border border-gold/40 bg-gold/15 px-3 py-1.5 font-aksen text-xs font-medium uppercase tracking-[0.12em] text-gold'
-                : 'inline-flex items-center gap-1.5 rounded-lg border border-cream/40 px-3 py-1.5 font-aksen text-xs font-medium uppercase tracking-[0.12em] text-cream'
-            }
-          >
-            {selesai ? <CheckCircle2 className="size-3.5" aria-hidden /> : <Clock3 className="size-3.5" aria-hidden />}
-            {selesai ? 'Selesai' : 'Akan Datang'}
-          </span>
+          <BadgeStatus event={event} varian="foto" ukuran="md" ikon />
         </div>
 
         <h1 className="mt-5 max-w-[16ch] font-heading text-4xl font-extrabold leading-[1.05] tracking-tight text-cream sm:text-5xl lg:text-6xl">

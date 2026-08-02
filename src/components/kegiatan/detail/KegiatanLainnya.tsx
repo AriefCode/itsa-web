@@ -4,7 +4,8 @@ import { ArrowRight, MapPin } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
-import { namaBulan, sudahSelesai } from '@/utilities/kegiatan'
+import { namaBulan } from '@/utilities/kegiatan'
+import { BadgeStatus } from '../BadgeStatus'
 
 const SINGKATAN_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
@@ -37,7 +38,6 @@ export const KegiatanLainnya: React.FC<{ events: Event[] }> = ({ events }) => {
       <ul className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {events.map((e) => {
           const mulai = new Date(e.tanggal_mulai)
-          const selesai = sudahSelesai(e)
           return (
             // min-w-0: tanpa ini item grid memakai lebar isinya (min-width
             // auto), jadi judul panjang melebarkan kartu dan membuat seluruh
@@ -71,15 +71,7 @@ export const KegiatanLainnya: React.FC<{ events: Event[] }> = ({ events }) => {
                 </span>
 
                 <span className="min-w-0 flex-1">
-                  <span
-                    className={
-                      selesai
-                        ? 'inline-block rounded bg-cream/15 px-2 py-0.5 font-aksen text-[10px] font-medium uppercase tracking-wider text-cream'
-                        : 'inline-block rounded bg-gold px-2 py-0.5 font-aksen text-[10px] font-bold uppercase tracking-wider text-forest'
-                    }
-                  >
-                    {selesai ? 'Selesai' : 'Akan Datang'}
-                  </span>
+                  <BadgeStatus event={e} varian="foto" />
                   <span className="mt-1.5 block font-heading text-sm font-bold leading-snug">
                     {e.judul}
                   </span>

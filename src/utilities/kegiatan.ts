@@ -17,6 +17,23 @@ export const sudahSelesai = (
   acuan: Date = new Date(),
 ) => akhirKegiatan(event).getTime() < acuan.getTime()
 
+export type StatusEvent = 'berlangsung' | 'selesai' | 'akan-datang'
+
+/**
+ * Status sebuah kegiatan untuk badge: sudah `selesai`, sedang `berlangsung`
+ * (waktu sekarang di antara mulai & akhir), atau masih `akan-datang`.
+ *
+ * Satu-satunya penentu status supaya badge di semua kartu memakai pemetaan
+ * yang sama (lihat komponen BadgeStatus).
+ */
+export const statusEvent = (
+  event: Pick<Event, 'tanggal_mulai' | 'tanggal_selesai'>,
+  acuan: Date = new Date(),
+): StatusEvent => {
+  if (sudahSelesai(event, acuan)) return 'selesai'
+  return acuan.getTime() >= new Date(event.tanggal_mulai).getTime() ? 'berlangsung' : 'akan-datang'
+}
+
 /**
  * Waktu tutup pendaftaran sebuah kegiatan: pakai `pendaftaran_tutup` kalau
  * diisi, kalau tidak dianggap tutup saat kegiatan mulai.
