@@ -45,17 +45,17 @@ export const HeroKegiatan: React.FC<{ gambar?: Media | number | null }> = ({ gam
 
       <div className="container py-16 sm:py-20 lg:py-24">
         <nav aria-label="Breadcrumb">
-          <ol className="flex items-center gap-1.5 text-sm text-mist">
+          <ol className="flex items-center gap-1.5 font-aksen text-xs text-mist">
             <li>
               <Link
                 href="/"
-                className="inline-flex items-center gap-1 rounded text-gold transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                className="inline-flex items-center gap-1 rounded transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
-                <Home className="size-4" aria-hidden />
-                <span className="sr-only">Beranda</span>
+                <Home className="size-3.5" aria-hidden />
+                Beranda
               </Link>
             </li>
-            <ChevronRight className="size-3.5 text-mist/60" aria-hidden />
+            <ChevronRight className="size-3.5" aria-hidden />
             <li aria-current="page" className="text-cream">
               Kegiatan
             </li>

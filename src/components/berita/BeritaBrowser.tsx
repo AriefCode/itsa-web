@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useMemo, useState } from 'react'
-import { ChevronDown, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Home, Search } from 'lucide-react'
 
 import type { Post } from '@/payload-types'
 import { FeaturedCarousel } from './FeaturedCarousel'
@@ -78,6 +79,23 @@ export const BeritaBrowser: React.FC<{
       {/* Hero */}
       <section className="bg-forest">
         <div className="container py-10 sm:py-12">
+          <nav aria-label="Breadcrumb" className="mb-8">
+            <ol className="flex items-center gap-1.5 font-aksen text-xs text-mist">
+              <li>
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1 rounded transition-colors hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                >
+                  <Home className="size-3.5" aria-hidden />
+                  Beranda
+                </Link>
+              </li>
+              <ChevronRight className="size-3.5" aria-hidden />
+              <li aria-current="page" className="text-cream">
+                News
+              </li>
+            </ol>
+          </nav>
           <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-12">
             <div>
               <p className="font-aksen text-xs font-semibold uppercase tracking-[0.18em] text-gold">

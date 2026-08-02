@@ -3,7 +3,6 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import React from 'react'
 
-import { BreakingBar } from '@/components/berita/BreakingBar'
 import { BeritaBrowser } from '@/components/berita/BeritaBrowser'
 import { CtaNewsletter } from '@/components/berita/CtaNewsletter'
 import { punyaKategori } from '@/utilities/berita'
@@ -44,7 +43,6 @@ export default async function BeritaPage() {
 
   return (
     <main className="bg-forest">
-      <BreakingBar post={posts[0] ?? null} />
       <BeritaBrowser
         posts={posts}
         kategori={kategori.map((k) => ({ id: k.id, title: k.title }))}
