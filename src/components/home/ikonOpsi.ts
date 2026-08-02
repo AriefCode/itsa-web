@@ -23,4 +23,5 @@ export const OPSI_IKON: { label: string; value: string }[] = [
   { label: 'Kamera', value: 'kamera' },
   { label: 'Akademik / laptop', value: 'akademik' },
   { label: 'Berita / koran', value: 'berita' },
+  { label: 'Berdiri / bendera', value: 'sejak' },
 ]

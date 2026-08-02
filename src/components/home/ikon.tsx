@@ -15,6 +15,7 @@ import {
   Camera,
   Laptop,
   Newspaper,
+  Flag,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -41,6 +42,7 @@ export const IKON: Record<string, LucideIcon> = {
   kamera: Camera,
   akademik: Laptop,
   berita: Newspaper,
+  sejak: Flag,
 }
 
 /** Ambil komponen ikon dari kunci; jatuh ke `bintang` kalau kunci tak dikenal. */
