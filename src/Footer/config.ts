@@ -53,7 +53,7 @@ export const Footer: GlobalConfig = {
       admin: {
         initCollapsed: true,
         description:
-          'Kolom kedua footer. Kalau kosong, dipakai daftar bawaan (Aspirasi, FAQ, Dokumentasi, Kontak).',
+          'Kolom kedua footer. Kalau kosong, dipakai daftar bawaan (Aspirasi, FAQ, Kegiatan).',
         components: {
           RowLabel: '@/Footer/RowLabel#RowLabel',
         },

@@ -2172,7 +2172,7 @@ export interface Footer {
       }[]
     | null;
   /**
-   * Kolom kedua footer. Kalau kosong, dipakai daftar bawaan (Aspirasi, FAQ, Dokumentasi, Kontak).
+   * Kolom kedua footer. Kalau kosong, dipakai daftar bawaan (Aspirasi, FAQ, Kegiatan).
    */
   tautanCepat?:
     | {

@@ -18,7 +18,7 @@ const NAV_BAWAAN = [
 const CEPAT_BAWAAN = [
   { label: 'Aspirasi', url: '/aspirasi' },
   { label: 'FAQ', url: '/faq' },
-  { label: 'Dokumentasi', url: '/kegiatan' },
+  { label: 'Kegiatan', url: '/kegiatan' },
 ]
 
 /** Satu kolom daftar tautan di footer. */
