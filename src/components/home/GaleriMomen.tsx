@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import React, { useRef } from 'react'
+import React from 'react'
 import { ArrowRight } from 'lucide-react'
 
 import type { Media as MediaType } from '@/payload-types'
 import { Media } from '@/components/Media'
+import { useGeserMendatar } from '@/components/kabinet/useGeserMendatar'
 
 /** Label kecil di atas judul, dengan garis gold pendek. */
 const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -23,36 +24,12 @@ const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
  * pengelolaan tambahan. Kalau belum ada foto sama sekali, section ini tidak
  * ditampilkan.
  *
- * Geser mendatar: sapuan sentuh/trackpad memakai scroll native, sedangkan
- * pengguna mouse bisa menarik (drag) langsung — kursor berubah jadi "grab"
- * sebagai isyarat. Tidak ada tombol panah.
+ * Geser mendatarnya memakai hook `useGeserMendatar` yang sama dengan strip
+ * "Sekilas Departemen" di Kabinet: roda mouse, seret, dan sapuan sentuh —
+ * tanpa tombol panah.
  */
 export const GaleriMomen: React.FC<{ foto: MediaType[] }> = ({ foto }) => {
-  const trackRef = useRef<HTMLDivElement>(null)
-  // Status tarikan mouse. Ref, bukan state: diperbarui tiap gerakan pointer,
-  // tak perlu memicu render ulang.
-  const tarik = useRef({ aktif: false, mulaiX: 0, mulaiScroll: 0 })
-
-  const mulaiTarik = (e: React.PointerEvent) => {
-    // Hanya untuk mouse; sentuh/trackpad sudah lancar lewat scroll native.
-    if (e.pointerType !== 'mouse') return
-    const el = trackRef.current
-    if (!el) return
-    tarik.current = { aktif: true, mulaiX: e.clientX, mulaiScroll: el.scrollLeft }
-    el.setPointerCapture(e.pointerId)
-  }
-
-  const geser = (e: React.PointerEvent) => {
-    const el = trackRef.current
-    if (!el || !tarik.current.aktif) return
-    el.scrollLeft = tarik.current.mulaiScroll - (e.clientX - tarik.current.mulaiX)
-  }
-
-  const akhiriTarik = (e: React.PointerEvent) => {
-    const el = trackRef.current
-    if (el?.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
-    tarik.current.aktif = false
-  }
+  const { propsTrek } = useGeserMendatar(foto.length, foto)
 
   if (foto.length === 0) return null
 
@@ -76,29 +53,22 @@ export const GaleriMomen: React.FC<{ foto: MediaType[] }> = ({ foto }) => {
           </Link>
         </div>
 
-        <div
-          ref={trackRef}
-          onPointerDown={mulaiTarik}
-          onPointerMove={geser}
-          onPointerUp={akhiriTarik}
-          onPointerLeave={akhiriTarik}
-          onPointerCancel={akhiriTarik}
-          onDragStart={(e) => e.preventDefault()}
-          className="flex cursor-grab select-none gap-4 overflow-x-auto pb-2 [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
-        >
+        {/* `[&_img]:[-webkit-user-drag:none]` mencegah gambar ikut "ditarik"
+            sebagai file saat menyeret strip dengan mouse. */}
+        <ul {...propsTrek} className={`${propsTrek.className} [&_img]:[-webkit-user-drag:none]`}>
           {foto.map((f, i) => (
-            <div
+            <li
               key={f.id ?? i}
-              className="h-44 w-60 shrink-0 overflow-hidden rounded-xl border border-forest-line sm:h-52 sm:w-72"
+              className="h-44 w-60 shrink-0 snap-start overflow-hidden rounded-xl border border-forest-line sm:h-52 sm:w-72"
             >
               <Media
                 resource={f}
-                imgClassName="pointer-events-none h-full w-full object-cover"
+                imgClassName="h-full w-full object-cover"
                 htmlElement={null}
               />
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   )
