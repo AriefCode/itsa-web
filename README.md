@@ -10,12 +10,36 @@ Berisi profil himpunan, kegiatan, kabinet pengurus, berita, dan kanal aspirasi a
 
 ## Daftar Isi
 
+README ini dibagi dua. Pilih sesuai peranmu:
+
+### 🧑‍💻 Untuk Programmer — mengembangkan kode situs
+
 - [Persiapan awal](#persiapan-awal)
 - [Menjalankan di komputer sendiri](#menjalankan-di-komputer-sendiri)
 - [Struktur proyek](#struktur-proyek)
 - [Alur kontribusi](#alur-kontribusi)
 - [Aturan penulisan kode](#aturan-penulisan-kode)
 - [Masalah yang sering muncul](#masalah-yang-sering-muncul)
+- [Perintah yang sering dipakai](#perintah-yang-sering-dipakai)
+
+### 🧑‍💼 Untuk Admin / Pengurus — mengelola isi lewat `/admin`
+
+- [Panduan Admin (`/admin`)](#panduan-admin-admin)
+  - [Masuk ke panel](#masuk-ke-panel)
+  - [Mengenal tata letak panel](#mengenal-tata-letak-panel)
+  - [Koleksi dan fungsinya](#koleksi-dan-fungsinya)
+  - [Panduan tiap koleksi](#panduan-tiap-koleksi) — Kegiatan, Pengurus, Divisi, Berita, FAQ, Aspirasi, Media, Kategori
+  - [Pengaturan Situs, Header, dan Footer](#pengaturan-situs-header-dan-footer)
+  - [Draft dan Terbit](#draft-dan-terbit)
+  - [Menambah atau mengganti akun pengurus](#menambah-atau-mengganti-akun-pengurus)
+  - [Etika dan tips mengisi konten](#etika-dan-tips-mengisi-konten)
+  - [Masalah yang sering ditemui admin](#masalah-yang-sering-ditemui-admin)
+
+> Programmer sebaiknya juga membaca Panduan Admin — kamu perlu paham cara pengurus memakai panel yang kamu bangun.
+
+---
+
+# 🧑‍💻 Bagian 1 — Panduan Programmer
 
 ---
 
@@ -298,6 +322,174 @@ git rm --cached itsa-web.db
 
 ---
 
+# 🧑‍💼 Bagian 2 — Panduan Admin
+
+---
+
+## Panduan Admin (`/admin`)
+
+Bagian ini untuk **pengurus** yang mengelola isi situs — **tidak perlu bisa ngoding**. Semua yang tampil di situs (kegiatan, foto pengurus, berita, FAQ, aspirasi) diatur dari satu tempat: panel admin di alamat **`/admin`**.
+
+Situs ITSA memakai **Payload CMS**. Anggap ia seperti "dashboard" tempat kamu mengetik teks, mengunggah foto, dan menekan **Save** — lalu isinya otomatis muncul di halaman publik. Kamu tidak menyentuh kode sama sekali.
+
+> **Penting soal lokal vs online.** Kalau kamu menjalankan situs di komputer sendiri (`npm run dev`), yang kamu ubah hanya database di komputermu — tidak memengaruhi situs asli. Perubahan untuk publik dilakukan di panel `/admin` **server yang sudah online** (nanti di `itsa.pcr.ac.id/admin`). Pastikan kamu tahu sedang membuka yang mana.
+
+### Masuk ke panel
+
+1. Buka `/admin` (lokal: <http://localhost:3000/admin>; produksi: `https://itsa.pcr.ac.id/admin`).
+2. Masukkan **email** dan **password** akun pengurusmu, klik **Login**.
+3. Kalau ini pertama kali dan database masih kosong, panel menampilkan **"Create first user"** — akun pertama yang kamu buat langsung jadi admin.
+
+> Belum punya akun? Minta dibuatkan oleh pengurus yang sudah punya akses (lihat [Menambah atau mengganti akun pengurus](#menambah-atau-mengganti-akun-pengurus)). **Semua pengurus yang bisa login punya hak yang sama** — belum ada pembedaan level (misalnya editor vs super-admin). Jadi hati-hati: siapa pun yang login bisa mengubah dan menghapus apa saja.
+
+### Mengenal tata letak panel
+
+- **Sidebar kiri** — daftar semua **koleksi** (jenis data) dan **global** (pengaturan). Klik salah satu untuk melihat isinya.
+- **Daftar isi (list view)** — tabel semua entri di sebuah koleksi. Ada tombol **Create New** di kanan atas, kolom pencarian, dan filter.
+- **Halaman edit** — form untuk satu entri. Kolom utama di tengah, kolom pendukung (tanggal, status, dsb.) di **sidebar kanan**.
+- **Tombol Save / Publish** — di kanan atas halaman edit. **Perubahan belum tersimpan sampai kamu menekannya.**
+
+Ikon nyawa (versi lama) tersedia di koleksi tertentu — kamu bisa mengembalikan isi ke versi sebelumnya kalau salah edit.
+
+### Koleksi dan fungsinya
+
+Setiap menu di sidebar mengisi bagian situs tertentu:
+
+| Menu di panel | Mengisi bagian | Catatan singkat |
+| --- | --- | --- |
+| **Kegiatan** (Events) | Halaman Kegiatan, detail event, "kegiatan mendatang" di Beranda | Satu event menyalakan timeline, kalender, dan halaman detailnya |
+| **Pengurus** | Halaman Kabinet | Tiap orang wajib menunjuk ke satu **Divisi** |
+| **Divisi** | Pengelompokan di Kabinet + foto grup | Buat ini **lebih dulu** sebelum Pengurus & Kegiatan |
+| **Berita** (Posts) | Halaman News | Dikelompokkan lewat **Kategori** |
+| **Kategori** (Categories) | Filter/seksi di halaman News | Mis. Oprec, Prestasi, Umum |
+| **FAQ** | Accordion FAQ (footer + Beranda) | Diurutkan lewat kolom **Urutan** |
+| **Aspirasi** | Halaman Aspirasi | Publik mengirim anonim; pengurus menanggapi & memilih yang tampil |
+| **Media** | Semua gambar/berkas | Sumber semua foto yang dipakai koleksi lain |
+| **Users** | Akun pengurus yang bisa login | Bukan konten situs — ini akun admin |
+| **Pengaturan Situs / Header / Footer** | Hero, statistik, sosial media, navbar, footer | Ini **global**, bukan daftar entri |
+
+### Panduan tiap koleksi
+
+Prinsip umum: **isi kolom bertanda wajib (\*)**, unggah/gunakan foto dari **Media**, lalu **Save**. Berikut hal spesifik tiap koleksi.
+
+#### Kegiatan (Events)
+
+Isi sebuah acara ITSA. Kolom penting:
+
+- **Judul Kegiatan\*** — nama acara.
+- Tab **Detail**: **Thumbnail\*** (foto sampul), **Lokasi\***, **gratis / HTM** (centang "gratis" atau isi harga tiket), **Link Pendaftaran** & **Pendaftaran Ditutup** (untuk acara yang buka pendaftaran), **Deskripsi\*** (teks kaya).
+- Tab **Dokumentasi & Recap**: **Link Dokumentasi (Google Drive)** dan **Recap** — diisi **setelah** acara selesai.
+- Sidebar kanan: **Tanggal Mulai\*** dan **Tanggal Selesai** (kosongkan kalau satu hari).
+- **Status** (Akan Datang / Sedang Berlangsung / Selesai) **dihitung otomatis dari tanggal** — kamu tidak perlu dan tidak bisa mengubahnya manual.
+
+> Karena Kegiatan memakai **draft**, ingat menekan **Publish** (bukan sekadar Save Draft) supaya muncul di situs. Lihat [Draft dan Terbit](#draft-dan-terbit).
+
+#### Pengurus
+
+Satu anggota kabinet. Kolom: **Nama Lengkap\***, **Foto\*** (potret; idealnya rasio 3:4), **Jabatan\*** (mis. "Ketua Divisi"), **Divisi\*** (pilih dari daftar Divisi), **Angkatan**, **Periode\*** (mis. "2025/2026"), **Urutan\*** (angka kecil tampil lebih dulu di dalam divisinya), dan **Media Sosial** (Instagram/LinkedIn/GitHub, opsional).
+
+#### Divisi
+
+Departemen/divisi kepengurusan. Kolom: **Nama Divisi\***, **Foto Grup Divisi** (foto bersama satu departemen — muncul di kartu Kabinet), **Deskripsi Singkat\***, **Ikon** (pilih dari daftar), **Urutan\*** (mengatur urutan tampil).
+
+> **Buat Divisi lebih dulu.** Pengurus dan Kegiatan wajib menunjuk ke sebuah Divisi — kalau daftarnya kosong, kamu tidak bisa menyimpan mereka.
+
+#### Berita (Posts)
+
+Artikel/berita di halaman News. Kolom: **Title\***, **Hero Image** (sampul), **Content** (isi berita), **Categories** (pilih satu/lebih kategori), dan **Link Eksternal** — dipakai untuk pos jenis **Oprec**: tombolnya mengarah ke Google Form pendaftaran, bukan ke halaman detail. Ada juga tab **SEO/Meta** (opsional, untuk pratinjau saat dibagikan).
+
+Berita memakai **draft** → ingat **Publish**.
+
+#### Kategori (Categories)
+
+Label pengelompokan berita (mis. **Oprec**, **Prestasi**, **Umum**). Kolom: **Title\***, **Deskripsi Singkat**, **Ikon**, **Urutan**, dan **"Tampilkan sebagai seksi di halaman Berita"** (kalau dicentang, kategori ini jadi blok tersendiri di halaman News).
+
+#### FAQ
+
+Satu pasang tanya-jawab. Kolom: **Pertanyaan\***, **Jawaban\*** (teks kaya), **Urutan\***. Nomor urut kecil tampil di atas.
+
+#### Aspirasi
+
+Kanal aspirasi **anonim** dari publik. Pengunjung mengisi form di halaman Aspirasi; entri masuk ke sini. Sebagai admin kamu:
+
+- Membaca **Isi Aspirasi** (dan **Judul**/**Kategori** kalau diisi pengirim).
+- Menulis **Tanggapan Pengurus** dan opsional **Foto Tanggapan**.
+- Mencentang **"Tampilkan di situs"** agar aspirasi + tanggapannya muncul publik. **Selama belum dicentang, aspirasi tidak tampil.**
+
+> Aspirasi bersifat sensitif. Jangan pernah menampilkan sesuatu yang membuka identitas pengirim atau berisi ujaran yang menyerang orang. Tanggapi dengan sopan.
+
+#### Media
+
+Gudang semua gambar. Unggah sekali di sini, lalu pilih dari koleksi lain (Thumbnail, Foto, Hero Image, dll.). Isi **alt** (deskripsi singkat gambar) — penting untuk aksesibilitas dan SEO. Payload otomatis membuat beberapa ukuran (thumbnail, square, small … og) supaya halaman tetap ringan.
+
+> **Menghapus media yang masih dipakai bisa membuat gambar hilang** di halaman yang memakainya. Cek dulu sebelum menghapus.
+
+### Pengaturan Situs, Header, dan Footer
+
+Ini **global** (satu entri tetap, bukan daftar). Ada di bagian bawah sidebar.
+
+- **Pengaturan Situs** — dibagi tab:
+  - **Beranda** — teks & foto **Hero** (judul, aksen gold, subjudul, foto latar, link video profil).
+  - **Tentang** — judul, paragraf, foto, dan kartu sorotan untuk section "Tentang" (dipakai halaman About).
+  - **Kabinet** — **Foto Sorotan Kabinet** (daftar foto untuk carousel di atas halaman Kabinet).
+  - **Media Sosial** — Instagram, TikTok, YouTube, LinkedIn, email (dipakai footer & kontak).
+  - **Statistik** — angka yang tampil di band statistik (mis. jumlah anggota, program kerja).
+- **Header** — menu navigasi navbar.
+- **Footer** — kolom tautan dan isi footer.
+
+Ubah, lalu **Save**. Perubahan langsung memengaruhi situs.
+
+### Draft dan Terbit
+
+Beberapa koleksi (**Kegiatan**, **Berita**, dan halaman **Pages**) punya dua keadaan:
+
+- **Draft** — tersimpan tapi **belum tampil** di situs publik. Cocok untuk menyiapkan konten sambil dicicil.
+- **Published (Terbit)** — tampil untuk umum.
+
+Di halaman edit, perhatikan tombol di kanan atas: **Save Draft** vs **Publish**. Kalau kontenmu "sudah disimpan tapi kok tidak muncul di situs", kemungkinan besar statusnya masih **Draft** — buka lagi dan tekan **Publish**. Untuk menyembunyikan sesuatu tanpa menghapus, kembalikan ke draft (**Unpublish**).
+
+### Menambah atau mengganti akun pengurus
+
+Akun login ada di koleksi **Users**.
+
+- **Menambah pengurus:** buka **Users → Create New**, isi nama, email, dan password, lalu Save. Beri tahu orangnya email & password-nya.
+- **Mengganti password:** buka user yang bersangkutan, ubah password, Save.
+- **Mencabut akses (pengurus lama):** hapus user tersebut, atau ganti passwordnya.
+
+> Ingat: **semua user punya hak penuh yang sama.** Hanya buat akun untuk pengurus yang memang perlu mengelola isi. Reset password lewat email **belum aktif** — kalau lupa password dan tidak ada admin lain, di lingkungan lokal satu-satunya jalan adalah menghapus `itsa-web.db` dan mulai ulang (di produksi: minta bantuan programmer).
+
+### Etika dan tips mengisi konten
+
+- **Foto:** gunakan gambar yang tidak buram, dengan izin yang jelas. Isi **alt** setiap gambar.
+- **Tulisan:** rapi, tanpa typo, nada ramah dan menghormati. Periksa nama & jabatan orang.
+- **Tanggal & data:** pastikan benar sebelum Publish — ini yang dilihat publik.
+- **Data contoh/tebakan:** kalau ada isi yang masih sementara (mis. deskripsi placeholder), tandai dan perbaiki sebelum situs benar-benar dipublikasikan.
+- **Jangan menampilkan info pribadi** (nomor HP, alamat, identitas pengirim aspirasi) tanpa izin.
+- **Ragu?** Simpan sebagai **Draft** dulu, lalu minta pengurus lain mengecek sebelum Publish.
+
+### Masalah yang sering ditemui admin
+
+**Sudah Save tapi tidak muncul di situs.**
+Statusnya kemungkinan masih **Draft** — tekan **Publish**. Atau halaman publik masih menyimpan versi lama sebentar (situs meng-cache); tunggu sebentar lalu refresh.
+
+**Tidak bisa memilih Divisi saat membuat Pengurus/Kegiatan.**
+Daftar Divisi masih kosong. Buat **Divisi** dulu, baru kembali.
+
+**Gambar tidak bisa dipilih / kosong.**
+Belum ada di **Media**. Unggah dulu di koleksi Media, baru pilih.
+
+**Tombol Save tidak aktif / ada kolom merah.**
+Ada kolom **wajib (\*)** yang belum diisi, atau tanggal selesai lebih awal dari tanggal mulai. Perbaiki kolom yang ditandai merah.
+
+**Salah edit, ingin kembali ke versi sebelumnya.**
+Buka entrinya, cari daftar **Versions**, pilih versi lama, dan pulihkan (tersedia untuk koleksi yang memakai draft).
+
+**Lupa password dan tidak ada admin lain.**
+Lihat [Menambah atau mengganti akun pengurus](#menambah-atau-mengganti-akun-pengurus).
+
+---
+
 ## Butuh bantuan?
 
-Buka **Issue** di GitHub, atau tanyakan langsung ke pengurus divisi Ristek.
+- **Pengurus/admin:** tanya ke pengurus **divisi Ristek** atau pemegang akun admin.
+- **Programmer:** buka **Issue** di GitHub, atau hubungi pengurus divisi Ristek.
