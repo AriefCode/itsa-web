@@ -266,6 +266,96 @@ Bagian ini **wajib dibaca sebelum menayangkan situs ke server**. Ada satu
 pengaturan yang, kalau salah, membuat pembatasan laju pengiriman aspirasi bisa
 dilewati — dan salahnya tidak kelihatan dari tampilan situs.
 
+### Syarat dasar: origin tidak boleh bisa dihubungi langsung
+
+**Baca ini lebih dulu.** Seluruh pengaturan `TRUSTED_IP_HEADER` di bawah
+bertumpu pada satu andaian: **satu-satunya jalan masuk ke aplikasi adalah lewat
+proxy.** Kalau seseorang bisa menghubungi proses Node secara langsung, ia
+mengirim sendiri header yang kita percayai, dan seluruh pengaman itu terlompati
+— bukan ditembus, melainkan dilewati dari samping.
+
+#### 1. Node hanya mendengar di localhost
+
+Proses Next **harus** terikat ke `127.0.0.1`, bukan `0.0.0.0`. Kalau terikat ke
+`0.0.0.0`, aplikasi bisa dihubungi dari jaringan luar di port 3000, melewati
+Nginx sepenuhnya.
+
+```bash
+# Jalankan lewat PM2 dengan host yang eksplisit
+pm2 start npm --name itsa-web -- start -- --hostname 127.0.0.1 --port 3000
+```
+
+Verifikasi setelah proses hidup:
+
+```bash
+ss -tlnp | grep 3000
+```
+
+| Keluaran | Artinya |
+|---|---|
+| `LISTEN 0 511 127.0.0.1:3000 ... node` | **Benar.** Hanya bisa dihubungi dari mesin itu sendiri. |
+| `LISTEN 0 511 0.0.0.0:3000 ...` atau `*:3000` | **Salah.** Terbuka ke jaringan — perbaiki sebelum lanjut. |
+
+Uji juga dari mesin lain — harus gagal, bukan menampilkan situs:
+
+```bash
+curl -sS --max-time 5 http://itsa.pcr.ac.id:3000/ ; echo "exit=$?"
+```
+
+Sabuk pengaman tambahan, kalau firewall kampus bisa diatur:
+
+```bash
+sudo ufw deny 3000/tcp
+```
+
+#### 2. Kalau memakai Cloudflare: batasi siapa yang boleh menyentuh origin
+
+Dengan Cloudflare, `cf-connecting-ip` hanya bisa dipercaya kalau **hanya
+Cloudflare** yang bisa membuka koneksi ke server. Tanpa itu, siapa pun yang tahu
+alamat IP asli server bisa melewati Cloudflare dan mengarang header itu sendiri.
+
+**Cara yang disarankan** — biarkan Nginx menerjemahkan alamatnya, sehingga
+konfigurasi aplikasi tetap sama seperti topologi tanpa CDN:
+
+```nginx
+# Daftar terbaru: https://www.cloudflare.com/ips/
+# Perbarui berkala; rentangnya bisa berubah.
+set_real_ip_from 173.245.48.0/20;
+set_real_ip_from 103.21.244.0/22;
+# ... lengkapi seluruh rentang IPv4 dan IPv6 dari tautan di atas
+real_ip_header CF-Connecting-IP;
+
+server {
+    listen 443 ssl;
+    server_name itsa.pcr.ac.id;
+
+    # Hanya Cloudflare yang boleh menyentuh origin.
+    allow 173.245.48.0/20;
+    allow 103.21.244.0/22;
+    # ... lengkapi seluruh rentang
+    deny all;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        # $remote_addr sudah diterjemahkan real_ip_header menjadi alamat
+        # pengunjung sungguhan, jadi baris ini tetap benar.
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Dengan pola di atas, isi **`TRUSTED_IP_HEADER=x-real-ip`** — sama seperti
+topologi Nginx saja. Ini lebih disukai karena hanya ada satu bentuk konfigurasi
+aplikasi yang perlu diingat.
+
+Kalau `CF-Connecting-IP` diteruskan apa adanya tanpa `real_ip_header`, barulah
+pakai `TRUSTED_IP_HEADER=cf-connecting-ip` — dan blok `allow`/`deny` di atas
+menjadi **wajib**, bukan opsional.
+
+> Ringkasnya: `TRUSTED_IP_HEADER` menjawab *"header mana yang dipercaya"*.
+> Bagian ini menjawab *"kenapa header itu layak dipercaya"*. Yang kedua tidak
+> bisa ditegakkan dari dalam aplikasi — hanya dari konfigurasi server.
+
 ### Variabel environment di server
 
 Selain yang sudah ada di `.env.example`, ada satu yang khusus untuk deploy:
@@ -289,8 +379,13 @@ topologi yang **benar-benar berjalan**:
 | Topologi | Isi dengan | Konfigurasi yang harus ada |
 |---|---|---|
 | Nginx saja | `x-real-ip` | `proxy_set_header X-Real-IP $remote_addr;` |
-| Cloudflare → Nginx | `cf-connecting-ip` | Cloudflare menimpanya sendiri; **jangan** pakai `x-real-ip`, karena isinya jadi IP edge Cloudflare, bukan pengunjung |
+| Cloudflare → Nginx, **dengan** `real_ip_header` (disarankan) | `x-real-ip` | `set_real_ip_from` seluruh rentang Cloudflare + `real_ip_header CF-Connecting-IP` + `allow`/`deny` — lihat "Syarat dasar" di atas |
+| Cloudflare → Nginx, **tanpa** `real_ip_header` | `cf-connecting-ip` | `allow`/`deny` rentang Cloudflare **wajib**. Jangan pakai `x-real-ip` di sini: isinya IP edge Cloudflare, bukan pengunjung |
 | Tidak ada proxy | biarkan kosong | — |
+
+Ketiga baris pertama sama-sama mensyaratkan origin tidak bisa dihubungi
+langsung. Kalau syarat itu tidak dipenuhi, tidak ada nilai `TRUSTED_IP_HEADER`
+yang aman — kosongkan saja.
 
 `x-forwarded-for` dan `forwarded` **ditolak aplikasi** walau diisi. Keduanya
 berisi daftar beruas koma yang boleh ditambahi klien, sehingga nilainya tidak
@@ -361,6 +456,20 @@ tegakkan batasnya di Nginx seperti contoh di atas.
 
 **Jalankan ini setiap kali selesai deploy atau mengubah konfigurasi Nginx.**
 
+> ### ⚠️ Jalankan SEBELUM situs diumumkan
+>
+> Skrip ini **menulis aspirasi sungguhan ke database produksi** — tidak ada
+> mode uji coba, karena yang sedang diperiksa justru jalur produksinya. Karena
+> itu:
+>
+> - Jalankan **sesudah deploy tapi sebelum tautan situs disebarkan**, saat
+>   belum ada aspirasi asli dari mahasiswa.
+> - Kalau sudah terlanjur diumumkan, jalankan di **jam sepi** dan bersihkan
+>   **segera** setelah selesai, sebelum ada kiriman asli yang masuk.
+> - Isi aspirasi uji sengaja diawali `SMOKETEST-` supaya bisa dikenali dan
+>   dihapus tanpa risiko ikut menghapus kiriman mahasiswa.
+> - Jangan pernah menghapus dengan `DELETE FROM aspirasi;` tanpa `WHERE`.
+
 Test otomatis di repo membuktikan *logika* aplikasinya benar. Yang belum
 dibuktikan siapa pun adalah apakah **Nginx di server ini** benar-benar menimpa
 header IP-nya. Hanya bisa dipastikan dari luar, setelah situs tayang.
@@ -400,7 +509,7 @@ for i in $(seq 1 6); do
     -H 'Content-Type: application/json' \
     -H "X-Real-IP: 203.0.113.$i" \
     -H "X-Forwarded-For: 198.51.100.$i" \
-    -d "{\"judul\":\"Uji smoke $i\",\"kategori\":\"lainnya\",\"isi\":\"Kiriman uji otomatis setelah deploy, mohon dihapus pengurus.\",\"token\":\"$TOKEN\"}"
+    -d "{\"judul\":\"SMOKETEST-$i\",\"kategori\":\"lainnya\",\"isi\":\"SMOKETEST- kiriman uji otomatis setelah deploy. Aman dihapus.\",\"token\":\"$TOKEN\"}"
 done
 ```
 
@@ -428,8 +537,42 @@ Periksa:
 Kalau semuanya `429` sejak kiriman pertama, berarti jatah untuk alamat itu sudah
 terpakai. Tunggu 10 menit lalu ulangi.
 
-> Skrip ini membuat **5 aspirasi sungguhan** di database. Hapus lewat
-> `/admin` → Aspirasi setelah selesai menguji.
+#### 3. Bersihkan data uji — langsung setelah selesai
+
+Skrip di atas meninggalkan **5 aspirasi** (kadang 6, tergantung di kiriman
+keberapa batasnya kena) di database produksi. Semuanya berawalan `SMOKETEST-`.
+
+**Cara paling aman — lewat panel admin:** buka `/admin` → Aspirasi, cari
+`SMOKETEST-`, centang, hapus. Tidak ada risiko salah perintah.
+
+**Lewat SQL,** kalau jumlahnya banyak atau panel sedang tidak bisa diakses.
+Lokasi berkas database ada di `DATABASE_URL` pada `.env` server (bawaannya
+`itsa-web.db` di root proyek):
+
+```bash
+# 1. Backup dulu. Selalu. Ini berkas produksi.
+cp itsa-web.db "itsa-web.db.bak-$(date +%Y%m%d-%H%M%S)"
+
+# 2. LIHAT dulu apa yang akan terhapus — jangan langsung DELETE.
+sqlite3 itsa-web.db \
+  "SELECT id, judul, substr(isi,1,40) FROM aspirasi WHERE judul LIKE 'SMOKETEST-%';"
+
+# 3. Kalau daftarnya sudah benar-benar hanya berisi baris SMOKETEST-, hapus.
+sqlite3 itsa-web.db \
+  "DELETE FROM aspirasi WHERE judul LIKE 'SMOKETEST-%';"
+
+# 4. Pastikan tidak ada sisa.
+sqlite3 itsa-web.db \
+  "SELECT COUNT(*) FROM aspirasi WHERE judul LIKE 'SMOKETEST-%';"   # harus 0
+```
+
+> `WHERE judul LIKE 'SMOKETEST-%'` itu bagian yang menjaga kiriman mahasiswa
+> tetap utuh. Jangan menjalankan `DELETE FROM aspirasi;` tanpa `WHERE` —
+> perintah itu mengosongkan seluruh aspirasi dan tidak bisa dibatalkan.
+
+Setelah menghapus lewat SQL, aspirasi yang terhapus mungkin masih terlihat di
+halaman publik sampai cache-nya kedaluwarsa. Kalau perlu segera, jalankan
+`pm2 restart itsa-web`.
 
 ---
 
