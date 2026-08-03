@@ -7,6 +7,7 @@ import {
   PANJANG_ISI_MAKSIMUM,
   PANJANG_JUDUL_MAKSIMUM,
 } from '@/utilities/aspirasi'
+import { verifikasiToken } from '@/utilities/tokenAspirasi'
 
 /**
  * Penerimaan aspirasi anonim.
@@ -21,8 +22,9 @@ import {
  * 1. Honeypot. Ada field yang disembunyikan dari manusia; bot pengisi-semua-
  *    kolom akan mengisinya. Kalau terisi, kiriman dibuang diam-diam dengan
  *    balasan sukses palsu supaya pembuat bot tidak belajar apa yang menahannya.
- * 2. Waktu isi minimum. Manusia butuh beberapa detik menulis; skrip mengirim
- *    seketika.
+ * 2. Token terbitan server. Manusia butuh beberapa detik menulis; skrip
+ *    mengirim seketika. Waktu buka form ikut ditandatangani di dalam token
+ *    (lihat utilities/tokenAspirasi.ts), jadi tidak bisa dikarang pengirim.
  * 3. Pembatasan laju per alamat IP.
  *
  * Ini menahan bot serampangan, bukan penyerang yang serius. Kalau kelak
@@ -40,6 +42,32 @@ const WAKTU_ISI_MINIMUM_MS = 3000
  * berlipat; pindahkan ke Redis atau batasi di Nginx bila itu terjadi.
  */
 const catatan = new Map<string, { jumlah: number; resetPada: number }>()
+
+/**
+ * Alamat pengirim untuk keperluan pembatasan laju.
+ *
+ * HANYA `X-Real-IP` yang dipercaya. Nginx menimpanya dengan `$remote_addr`
+ * (`proxy_set_header X-Real-IP $remote_addr;`), jadi nilainya tidak bisa
+ * dikarang pengirim.
+ *
+ * `X-Forwarded-For` sengaja TIDAK dipakai: nilainya aditif — pola lazim
+ * `$proxy_add_x_forwarded_for` menambahkan ip asli di ujung kanan, sehingga
+ * entri terdepan berasal dari pengirim. Menentukan entri mana yang tepercaya
+ * menuntut asumsi jumlah proxy, dan asumsi itu tidak bisa diverifikasi dari
+ * dalam aplikasi. Alamat socket sendiri tidak tersedia di route handler App
+ * Router (NextRequest tidak mengekspos `.ip`).
+ *
+ * WAJIB saat deploy: pasang `proxy_set_header X-Real-IP $remote_addr;` di
+ * Nginx. Tanpa itu semua pengunjung berbagi satu ember (lihat di bawah).
+ */
+const ipPengirim = (h: Headers): string => {
+  const nyata = h.get('x-real-ip')?.trim()
+  if (nyata) return nyata
+  // Tanpa header dari proxy, seluruh pengirim berbagi satu ember yang sama.
+  // Sengaja gagal ke arah ketat: penyerang tidak bisa memperbanyak ember,
+  // konsekuensinya batas jadi berlaku global.
+  return 'tanpa-proxy'
+}
 
 const lewatBatas = (ip: string): boolean => {
   const sekarang = Date.now()
@@ -64,7 +92,7 @@ export async function POST(request: Request): Promise<Response> {
     kategori?: unknown
     isi?: unknown
     website?: unknown
-    dibuka?: unknown
+    token?: unknown
   }
 
   try {
@@ -78,19 +106,16 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ pesan: 'Aspirasi terkirim.' }, { status: 200 })
   }
 
-  // Lapis 2: waktu pengisian.
-  const dibuka = Number(body.dibuka)
-  if (!Number.isFinite(dibuka) || Date.now() - dibuka < WAKTU_ISI_MINIMUM_MS) {
-    return Response.json(
-      { pesan: 'Kiriman terlalu cepat. Coba kirim ulang sebentar lagi.' },
-      { status: 429 },
-    )
+  // Lapis 2: token terbitan server. Waktu buka form ada di dalam token dan
+  // ikut ditandatangani, jadi pengirim tidak bisa mengarangnya.
+  const hasilToken = verifikasiToken(body.token, WAKTU_ISI_MINIMUM_MS)
+  if (!hasilToken.sah) {
+    return Response.json({ pesan: hasilToken.pesan }, { status: hasilToken.status })
   }
 
   // Lapis 3: batas laju per IP.
   const h = await headers()
-  const ip =
-    h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip')?.trim() || 'tanpa-ip'
+  const ip = ipPengirim(h)
 
   if (lewatBatas(ip)) {
     return Response.json(

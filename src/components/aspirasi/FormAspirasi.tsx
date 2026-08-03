@@ -25,16 +25,16 @@ const LABEL = 'block text-sm font-medium text-forest'
  *   DOM sehingga bot pengisi-semua-kolom akan mengisinya. Disembunyikan
  *   dengan posisi di luar layar, bukan display:none, karena sebagian bot
  *   melewati field yang jelas-jelas disembunyikan.
- * - Waktu form dibuka dikirim bersama kiriman, supaya server bisa menolak
- *   pengiriman yang terlalu cepat untuk ditulis manusia.
+ * - `token` diterbitkan server saat halaman dirender dan dikirim balik apa
+ *   adanya. Waktu buka form ada di dalamnya dan ikut ditandatangani, jadi
+ *   klien tidak bisa mengaku-ngaku sudah lama membuka formnya.
  */
-export const FormAspirasi: React.FC = () => {
+export const FormAspirasi: React.FC<{ token: string }> = ({ token }) => {
   const [judul, setJudul] = useState('')
   const [kategori, setKategori] = useState('')
   const [isi, setIsi] = useState('')
   const [status, setStatus] = useState<'diam' | 'mengirim' | 'berhasil'>('diam')
   const [galat, setGalat] = useState<string | null>(null)
-  const dibukaRef = useRef(Date.now())
   const honeypotRef = useRef<HTMLInputElement>(null)
 
   const kirim = async (e: React.FormEvent) => {
@@ -53,7 +53,7 @@ export const FormAspirasi: React.FC = () => {
           kategori,
           isi,
           website: honeypotRef.current?.value ?? '',
-          dibuka: dibukaRef.current,
+          token,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -87,10 +87,7 @@ export const FormAspirasi: React.FC = () => {
         </p>
         <button
           type="button"
-          onClick={() => {
-            dibukaRef.current = Date.now()
-            setStatus('diam')
-          }}
+          onClick={() => setStatus('diam')}
           className="mt-5 rounded-xl border border-olive/30 px-5 py-2.5 text-sm font-medium text-forest transition-colors duration-200 hover:bg-olive/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
         >
           Kirim aspirasi lagi

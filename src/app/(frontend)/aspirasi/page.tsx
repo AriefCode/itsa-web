@@ -15,6 +15,7 @@ import { TombolMengambang } from '@/components/aspirasi/TombolMengambang'
 import { KerangkaDaftar, KerangkaStatistik } from '@/components/aspirasi/Kerangka'
 import { Paginasi } from '@/components/Paginasi'
 import { kategoriSah } from '@/utilities/aspirasi'
+import { buatToken } from '@/utilities/tokenAspirasi'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -172,7 +173,9 @@ export default async function AspirasiPage({ searchParams }: Args) {
           {/* scroll-mt memberi jarak di atas form saat dituju dari anchor,
               supaya judulnya tidak menempel persis di tepi atas layar. */}
           <section id="tulis-aspirasi" className="scroll-mt-6" aria-label="Form kirim aspirasi">
-            <FormAspirasi />
+            {/* Token diterbitkan per render. Halaman ini dinamis (memakai
+                searchParams), jadi tiap pengunjung dapat token segar. */}
+            <FormAspirasi token={buatToken()} />
           </section>
 
           <Suspense fallback={<KerangkaStatistik />}>
