@@ -19,6 +19,7 @@ README ini dibagi dua. Pilih sesuai peranmu:
 - [Struktur proyek](#struktur-proyek)
 - [Alur kontribusi](#alur-kontribusi)
 - [Aturan penulisan kode](#aturan-penulisan-kode)
+- [Deploy](#deploy) — **wajib dibaca sebelum menayangkan ke server**
 - [Masalah yang sering muncul](#masalah-yang-sering-muncul)
 - [Perintah yang sering dipakai](#perintah-yang-sering-dipakai)
 
@@ -256,6 +257,100 @@ git branch -d nama-branch-mu
 - **Jaga aksesibilitas.** Semua gambar punya `alt`, tombol bisa dijangkau keyboard, kontras teks memadai.
 - **Setelah mengubah collection**, jalankan `npm run generate:types` supaya tipe TypeScript ikut ter-update.
 - **Tulis komentar untuk hal yang tidak jelas dari kodenya.** Jelaskan alasan, jangan mengulang isi kode.
+
+---
+
+## Deploy
+
+Bagian ini **wajib dibaca sebelum menayangkan situs ke server**. Ada satu
+pengaturan yang, kalau salah, membuat pembatasan laju pengiriman aspirasi bisa
+dilewati — dan salahnya tidak kelihatan dari tampilan situs.
+
+### Variabel environment di server
+
+Selain yang sudah ada di `.env.example`, ada satu yang khusus untuk deploy:
+
+| Variabel | Wajib? | Keterangan |
+|---|---|---|
+| `PAYLOAD_SECRET` | **Ya** | Menandatangani sesi admin dan token anti-spam aspirasi. Aplikasi **berhenti dengan error saat start** kalau kosong. Buat dengan `openssl rand -hex 32`. |
+| `TRUSTED_IP_HEADER` | Tidak, tapi baca dulu | Nama header yang dipercaya sebagai alamat pengunjung. Bawaannya kosong. |
+
+### `TRUSTED_IP_HEADER` — cara mengisinya
+
+Pengiriman aspirasi dibatasi **5 kiriman per 10 menit per pengunjung**. Untuk
+membedakan pengunjung, aplikasi perlu tahu alamat IP-nya. Masalahnya, aplikasi
+Next.js tidak bisa membaca alamat socket secara langsung — satu-satunya sumber
+adalah header HTTP, dan **header bisa dikirim siapa saja**.
+
+Sebuah header hanya bisa dipercaya kalau ada proxy di depan yang **menimpanya**.
+Karena itu variabel ini sengaja kosong secara bawaan, dan harus diisi sesuai
+topologi yang **benar-benar berjalan**:
+
+| Topologi | Isi dengan | Konfigurasi yang harus ada |
+|---|---|---|
+| Nginx saja | `x-real-ip` | `proxy_set_header X-Real-IP $remote_addr;` |
+| Cloudflare → Nginx | `cf-connecting-ip` | Cloudflare menimpanya sendiri; **jangan** pakai `x-real-ip`, karena isinya jadi IP edge Cloudflare, bukan pengunjung |
+| Tidak ada proxy | biarkan kosong | — |
+
+> **Jangan mengisi variabel ini kalau tidak ada proxy yang menimpa header
+> tersebut.** Header yang tidak ditimpa dikirim langsung oleh pengunjung,
+> sehingga pembatasan lajunya bisa dilewati cukup dengan mengganti-ganti
+> nilainya di tiap permintaan. Lebih baik dibiarkan kosong.
+
+Kalau dibiarkan kosong, aplikasi **tidak membaca header apa pun** dan semua
+pengunjung berbagi satu jatah. Situs tetap aman, tapi orang bisa saling
+menghabiskan jatah. Saat start, akan muncul peringatan mencolok di log:
+
+```
+========================================================================
+PERINGATAN: TRUSTED_IP_HEADER belum diisi.
+...
+========================================================================
+```
+
+Peringatan itu terbit dari `src/instrumentation.ts`. Kalau tidak muncul dan
+tidak ada error, konfigurasinya sudah terbaca.
+
+### Contoh blok Nginx
+
+```nginx
+server {
+    server_name itsa.pcr.ac.id;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+
+        # WAJIB: menimpa header, bukan menambahkan. Inilah yang membuat
+        # x-real-ip layak dipercaya oleh aplikasi.
+        proxy_set_header X-Real-IP $remote_addr;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        'upgrade';
+    }
+}
+```
+
+Pembatasan laju di tingkat aplikasi hanya lapis kedua. Lapis utamanya sebaiknya
+di Nginx, karena di sanalah alamat asli benar-benar diketahui:
+
+```nginx
+limit_req_zone $binary_remote_addr zone=aspirasi:10m rate=30r/m;
+
+location /next/aspirasi {
+    limit_req zone=aspirasi burst=5 nodelay;
+    proxy_pass http://127.0.0.1:3000;
+}
+```
+
+### Catatan PM2
+
+Hitungan pembatasan laju disimpan di memori proses. Kalau PM2 dijalankan dalam
+mode **cluster** dengan N instance, tiap instance punya hitungannya sendiri
+sehingga batas efektifnya menjadi 5 × N. Pakai mode `fork` (satu instance), atau
+tegakkan batasnya di Nginx seperti contoh di atas.
 
 ---
 

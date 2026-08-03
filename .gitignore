@@ -2,7 +2,11 @@ build
 dist / media
 node_modules
 .DS_Store
+# Semua varian .env (.env.local, .env.production, ...) — repo ini publik,
+# jadi jangan andalkan pola tunggal. Pengecualian: contoh tanpa nilai asli.
 .env
+.env.*
+!.env.example
 .next
 next-env.d.ts
 .vercel
@@ -21,6 +25,11 @@ public/media/
 public/robots.txt
 public/sitemap*.xml
 
+
+# Hasil audit keamanan — berkas kerja lokal. Isinya memetakan permukaan
+# serang beserta lokasi barisnya, jadi jangan diterbitkan di repo publik.
+.audit/
+AUDIT_REPORT.md
 
 # Playwright
 node_modules/

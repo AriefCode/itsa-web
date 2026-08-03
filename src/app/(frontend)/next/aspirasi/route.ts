@@ -43,30 +43,41 @@ const WAKTU_ISI_MINIMUM_MS = 3000
  */
 const catatan = new Map<string, { jumlah: number; resetPada: number }>()
 
+/** Ember bersama untuk pengirim yang alamatnya tidak bisa dipastikan. */
+const EMBER_BERSAMA = 'tanpa-proxy'
+
 /**
- * Alamat pengirim untuk keperluan pembatasan laju.
+ * Nama header yang boleh dipercaya sebagai alamat pengirim.
  *
- * HANYA `X-Real-IP` yang dipercaya. Nginx menimpanya dengan `$remote_addr`
- * (`proxy_set_header X-Real-IP $remote_addr;`), jadi nilainya tidak bisa
- * dikarang pengirim.
+ * SENGAJA TANPA NILAI BAWAAN. Header apa pun bisa dikirim langsung oleh klien;
+ * ia hanya tepercaya kalau ada proxy di depan yang MENIMPANYA. Karena aplikasi
+ * tidak bisa tahu sendiri apakah proxy itu ada, satu-satunya jawaban aman saat
+ * variabel ini kosong adalah tidak membaca header apa pun.
  *
- * `X-Forwarded-For` sengaja TIDAK dipakai: nilainya aditif — pola lazim
- * `$proxy_add_x_forwarded_for` menambahkan ip asli di ujung kanan, sehingga
- * entri terdepan berasal dari pengirim. Menentukan entri mana yang tepercaya
- * menuntut asumsi jumlah proxy, dan asumsi itu tidak bisa diverifikasi dari
- * dalam aplikasi. Alamat socket sendiri tidak tersedia di route handler App
- * Router (NextRequest tidak mengekspos `.ip`).
+ * Memberi nilai bawaan (mis. 'x-real-ip') akan membuat deploy yang belum
+ * dikonfigurasi memercayai header karangan penyerang — pembatasan lajunya
+ * lolos begitu saja, hanya berpindah header. Itu gagal ke arah longgar.
  *
- * WAJIB saat deploy: pasang `proxy_set_header X-Real-IP $remote_addr;` di
- * Nginx. Tanpa itu semua pengunjung berbagi satu ember (lihat di bawah).
+ * Isi sesuai topologi yang BENAR-BENAR berjalan:
+ *   x-real-ip        → Nginx dengan `proxy_set_header X-Real-IP $remote_addr;`
+ *   cf-connecting-ip → ada Cloudflare di depan Nginx
+ *
+ * `X-Forwarded-For` tidak disarankan: nilainya aditif, sehingga entri yang
+ * tepercaya bergantung jumlah proxy — asumsi yang tidak bisa diverifikasi dari
+ * dalam aplikasi. Alamat socket tidak tersedia di route handler App Router
+ * (NextRequest tidak mengekspos `.ip`).
+ *
+ * Lihat README bagian "Deploy" untuk konfigurasi lengkap dan konsekuensinya.
  */
+const HEADER_IP_TEPERCAYA = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase()
+
 const ipPengirim = (h: Headers): string => {
-  const nyata = h.get('x-real-ip')?.trim()
-  if (nyata) return nyata
-  // Tanpa header dari proxy, seluruh pengirim berbagi satu ember yang sama.
-  // Sengaja gagal ke arah ketat: penyerang tidak bisa memperbanyak ember,
-  // konsekuensinya batas jadi berlaku global.
-  return 'tanpa-proxy'
+  // Tanpa konfigurasi eksplisit, tidak ada header yang dibaca sama sekali:
+  // seluruh pengirim berbagi satu ember. Batasnya jadi terlalu ketat, dan itu
+  // memang pilihan yang dikehendaki — salah konfigurasi tidak boleh berujung
+  // pada pembatasan laju yang bisa dilewati.
+  if (!HEADER_IP_TEPERCAYA) return EMBER_BERSAMA
+  return h.get(HEADER_IP_TEPERCAYA)?.trim() || EMBER_BERSAMA
 }
 
 const lewatBatas = (ip: string): boolean => {

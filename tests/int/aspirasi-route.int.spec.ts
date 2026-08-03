@@ -18,6 +18,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // saat dimuat dan sengaja melempar kalau kosong.
 process.env.PAYLOAD_SECRET = 'rahasia-uji-jangan-dipakai-di-produksi'
 
+/**
+ * Menyetel TRUSTED_IP_HEADER lalu memuat ulang modul rute, karena nilainya
+ * dibaca sekali saat modul dimuat.
+ */
+const denganHeaderTepercaya = async (nama: string | undefined) => {
+  if (nama === undefined) delete process.env.TRUSTED_IP_HEADER
+  else process.env.TRUSTED_IP_HEADER = nama
+  vi.resetModules()
+  return await import('@/app/(frontend)/next/aspirasi/route')
+}
+
 const buat = vi.fn()
 
 vi.mock('@payload-config', () => ({ default: {} }))
@@ -48,6 +59,8 @@ const permintaan = (badan: BadanKiriman) =>
  * memuatnya ulang supaya hitungannya tidak bocor antar test.
  */
 const muatRute = async () => {
+  // Bawaan test: topologi Nginx yang sudah dikonfigurasi benar.
+  process.env.TRUSTED_IP_HEADER = 'x-real-ip'
   vi.resetModules()
   return await import('@/app/(frontend)/next/aspirasi/route')
 }
@@ -191,6 +204,45 @@ describe('POST /next/aspirasi — kunci pembatasan laju (ASP-01 lapis 3)', () =>
       hasil.push(res.status)
     }
 
+    expect(hasil[5]).toBe(429)
+  })
+
+  it('tidak membaca header apa pun saat TRUSTED_IP_HEADER kosong', async () => {
+    // Deploy yang belum dikonfigurasi. Pengirim mencoba mengarang X-Real-IP
+    // sendiri — persis bypass yang dulu cuma berpindah header. Nilainya harus
+    // diabaikan, sehingga semua kiriman jatuh ke ember yang sama.
+    const { POST } = await denganHeaderTepercaya(undefined)
+
+    const hasil: number[] = []
+    for (let i = 0; i < 6; i++) {
+      headerSaatIni = new Headers({
+        'x-real-ip': `203.0.113.${i}`,
+        'x-forwarded-for': `198.51.100.${i}`,
+      })
+      const res = await POST(permintaan(await kirimanLolosLapisDua()))
+      hasil.push(res.status)
+    }
+
+    expect(hasil.slice(0, 5)).toEqual([201, 201, 201, 201, 201])
+    expect(hasil[5]).toBe(429)
+  })
+
+  it('memakai cf-connecting-ip saat itu yang dikonfigurasi, bukan x-real-ip', async () => {
+    // Cloudflare di depan Nginx: x-real-ip berisi IP edge, jadi tidak boleh
+    // dipakai. Di sini x-real-ip sengaja berputar dan harus diabaikan.
+    const { POST } = await denganHeaderTepercaya('cf-connecting-ip')
+
+    const hasil: number[] = []
+    for (let i = 0; i < 6; i++) {
+      headerSaatIni = new Headers({
+        'cf-connecting-ip': '203.0.113.7',
+        'x-real-ip': `10.0.0.${i}`,
+      })
+      const res = await POST(permintaan(await kirimanLolosLapisDua()))
+      hasil.push(res.status)
+    }
+
+    expect(hasil.slice(0, 5)).toEqual([201, 201, 201, 201, 201])
     expect(hasil[5]).toBe(429)
   })
 })
