@@ -62,22 +62,57 @@ const EMBER_BERSAMA = 'tanpa-proxy'
  *   x-real-ip        → Nginx dengan `proxy_set_header X-Real-IP $remote_addr;`
  *   cf-connecting-ip → ada Cloudflare di depan Nginx
  *
- * `X-Forwarded-For` tidak disarankan: nilainya aditif, sehingga entri yang
- * tepercaya bergantung jumlah proxy — asumsi yang tidak bisa diverifikasi dari
- * dalam aplikasi. Alamat socket tidak tersedia di route handler App Router
- * (NextRequest tidak mengekspos `.ip`).
- *
  * Lihat README bagian "Deploy" untuk konfigurasi lengkap dan konsekuensinya.
  */
-const HEADER_IP_TEPERCAYA = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase()
+
+/**
+ * Header yang TIDAK PERNAH boleh dipakai sebagai kunci, walau dikonfigurasi.
+ *
+ * Keduanya berisi daftar beruas koma yang boleh ditambahi klien. Memakai
+ * nilai mentahnya sebagai kunci Map berarti pengirim bisa mengarang kunci
+ * sebanyak yang ia mau — pembatasan lajunya lolos, dan `catatan` membengkak
+ * satu entri per permintaan. Menolaknya di sini menutup kedua akibat itu
+ * sekaligus, terlepas dari apa yang tertulis di environment.
+ */
+const HEADER_TERLARANG = new Set(['x-forwarded-for', 'forwarded'])
+
+/**
+ * Kunci yang lebih panjang dari ini ditolak. Alamat IPv6 terpanjang 45
+ * karakter, jadi 64 memberi kelonggaran wajar sambil tetap membatasi memori
+ * per entri.
+ */
+const PANJANG_KUNCI_MAKSIMUM = 64
+
+/**
+ * Nama header tepercaya setelah disaring. `undefined` berarti tidak ada header
+ * yang dibaca sama sekali.
+ */
+export const headerIpTepercaya = ((): string | undefined => {
+  const nama = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase()
+  if (!nama) return undefined
+  // Konfigurasi yang tidak aman diabaikan, bukan dituruti. Peringatannya
+  // diterbitkan saat start oleh src/instrumentation.ts.
+  if (HEADER_TERLARANG.has(nama)) return undefined
+  return nama
+})()
 
 const ipPengirim = (h: Headers): string => {
   // Tanpa konfigurasi eksplisit, tidak ada header yang dibaca sama sekali:
   // seluruh pengirim berbagi satu ember. Batasnya jadi terlalu ketat, dan itu
   // memang pilihan yang dikehendaki — salah konfigurasi tidak boleh berujung
   // pada pembatasan laju yang bisa dilewati.
-  if (!HEADER_IP_TEPERCAYA) return EMBER_BERSAMA
-  return h.get(HEADER_IP_TEPERCAYA)?.trim() || EMBER_BERSAMA
+  if (!headerIpTepercaya) return EMBER_BERSAMA
+
+  const nilai = h.get(headerIpTepercaya)?.trim()
+  if (!nilai) return EMBER_BERSAMA
+
+  // Sabuk pengaman kedua, kalau-kalau header yang dikonfigurasi ternyata tetap
+  // membawa daftar beruas koma (mis. proxy yang meneruskan apa adanya). Satu
+  // permintaan hanya boleh menghasilkan satu alamat.
+  if (nilai.includes(',')) return EMBER_BERSAMA
+  if (nilai.length > PANJANG_KUNCI_MAKSIMUM) return EMBER_BERSAMA
+
+  return nilai
 }
 
 const lewatBatas = (ip: string): boolean => {

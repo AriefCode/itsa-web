@@ -227,6 +227,82 @@ describe('POST /next/aspirasi — kunci pembatasan laju (ASP-01 lapis 3)', () =>
     expect(hasil[5]).toBe(429)
   })
 
+  it('mengabaikan TRUSTED_IP_HEADER yang diisi x-forwarded-for', async () => {
+    // Salah konfigurasi yang paling menggoda. XFF beruas koma dan boleh
+    // ditambahi klien, jadi nilai mentahnya tidak boleh jadi kunci Map —
+    // kalau dituruti, tiap permintaan menghasilkan kunci baru sekaligus
+    // melewati batas.
+    const { POST } = await denganHeaderTepercaya('x-forwarded-for')
+
+    const hasil: number[] = []
+    for (let i = 0; i < 6; i++) {
+      headerSaatIni = new Headers({ 'x-forwarded-for': `203.0.113.${i}, 10.0.0.9` })
+      const res = await POST(permintaan(await kirimanLolosLapisDua()))
+      hasil.push(res.status)
+    }
+
+    expect(hasil[5]).toBe(429)
+  })
+
+  it('mengabaikan TRUSTED_IP_HEADER yang diisi forwarded', async () => {
+    const { POST } = await denganHeaderTepercaya('forwarded')
+
+    const hasil: number[] = []
+    for (let i = 0; i < 6; i++) {
+      headerSaatIni = new Headers({ forwarded: `for=203.0.113.${i}` })
+      const res = await POST(permintaan(await kirimanLolosLapisDua()))
+      hasil.push(res.status)
+    }
+
+    expect(hasil[5]).toBe(429)
+  })
+
+  it('menolak nilai header yang beruas koma, walau nama headernya sah', async () => {
+    // Proxy yang meneruskan daftar apa adanya ke X-Real-IP. Nilainya tidak
+    // boleh dipakai; jatuh ke ember bersama.
+    const { POST } = await denganHeaderTepercaya('x-real-ip')
+
+    const hasil: number[] = []
+    for (let i = 0; i < 6; i++) {
+      headerSaatIni = new Headers({ 'x-real-ip': `203.0.113.${i}, 10.0.0.9` })
+      const res = await POST(permintaan(await kirimanLolosLapisDua()))
+      hasil.push(res.status)
+    }
+
+    expect(hasil[5]).toBe(429)
+  })
+
+  it('menolak nilai header yang lebih panjang dari 64 karakter', async () => {
+    // Kunci raksasa adalah cara lain membengkakkan Map. Panjang IPv6 terpanjang
+    // 45 karakter, jadi apa pun di atas 64 tidak masuk akal sebagai alamat.
+    const { POST } = await denganHeaderTepercaya('x-real-ip')
+
+    const hasil: number[] = []
+    for (let i = 0; i < 6; i++) {
+      headerSaatIni = new Headers({ 'x-real-ip': `${'a'.repeat(80)}${i}` })
+      const res = await POST(permintaan(await kirimanLolosLapisDua()))
+      hasil.push(res.status)
+    }
+
+    expect(hasil[5]).toBe(429)
+  })
+
+  it('menerima alamat IPv6 penuh sebagai kunci yang sah', async () => {
+    // Batas 64 karakter tidak boleh ikut menolak alamat yang benar.
+    const { POST } = await denganHeaderTepercaya('x-real-ip')
+    const ipv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
+
+    headerSaatIni = new Headers({ 'x-real-ip': ipv6 })
+    const pertama = await POST(permintaan(await kirimanLolosLapisDua()))
+
+    // Alamat berbeda harus dapat ember sendiri, bukan ikut ember bersama.
+    headerSaatIni = new Headers({ 'x-real-ip': '203.0.113.7' })
+    const kedua = await POST(permintaan(await kirimanLolosLapisDua()))
+
+    expect(pertama.status).toBe(201)
+    expect(kedua.status).toBe(201)
+  })
+
   it('memakai cf-connecting-ip saat itu yang dikonfigurasi, bukan x-real-ip', async () => {
     // Cloudflare di depan Nginx: x-real-ip berisi IP edge, jadi tidak boleh
     // dipakai. Di sini x-real-ip sengaja berputar dan harus diabaikan.

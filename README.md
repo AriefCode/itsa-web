@@ -292,6 +292,11 @@ topologi yang **benar-benar berjalan**:
 | Cloudflare → Nginx | `cf-connecting-ip` | Cloudflare menimpanya sendiri; **jangan** pakai `x-real-ip`, karena isinya jadi IP edge Cloudflare, bukan pengunjung |
 | Tidak ada proxy | biarkan kosong | — |
 
+`x-forwarded-for` dan `forwarded` **ditolak aplikasi** walau diisi. Keduanya
+berisi daftar beruas koma yang boleh ditambahi klien, sehingga nilainya tidak
+bisa dipakai sebagai identitas. Kalau tetap diisi, saat start muncul peringatan
+dan nilainya diperlakukan seolah kosong.
+
 > **Jangan mengisi variabel ini kalau tidak ada proxy yang menimpa header
 > tersebut.** Header yang tidak ditimpa dikirim langsung oleh pengunjung,
 > sehingga pembatasan lajunya bisa dilewati cukup dengan mengganti-ganti
@@ -351,6 +356,80 @@ Hitungan pembatasan laju disimpan di memori proses. Kalau PM2 dijalankan dalam
 mode **cluster** dengan N instance, tiap instance punya hitungannya sendiri
 sehingga batas efektifnya menjadi 5 × N. Pakai mode `fork` (satu instance), atau
 tegakkan batasnya di Nginx seperti contoh di atas.
+
+### Smoke test setelah deploy
+
+**Jalankan ini setiap kali selesai deploy atau mengubah konfigurasi Nginx.**
+
+Test otomatis di repo membuktikan *logika* aplikasinya benar. Yang belum
+dibuktikan siapa pun adalah apakah **Nginx di server ini** benar-benar menimpa
+header IP-nya. Hanya bisa dipastikan dari luar, setelah situs tayang.
+
+#### 1. Periksa log saat start
+
+```bash
+pm2 logs itsa-web --lines 50 | grep -A3 "PERINGATAN\|KONFIGURASI"
+```
+
+- Tidak ada keluaran → konfigurasi terbaca, lanjut ke langkah 2.
+- Muncul `KONFIGURASI TIDAK LENGKAP` → proses berhenti, `PAYLOAD_SECRET` kosong.
+- Muncul `PERINGATAN: TRUSTED_IP_HEADER ...` → baca isinya, betulkan, lalu
+  `pm2 restart itsa-web`.
+
+#### 2. Pastikan pembatasan laju tidak bisa dilewati
+
+Skrip ini berpura-pura jadi penyerang: mengarang alamat IP yang berbeda di tiap
+permintaan. Kalau Nginx menimpa headernya dengan benar, karangan itu tidak
+berpengaruh dan kiriman keenam tetap ditolak.
+
+```bash
+SITUS=https://itsa.pcr.ac.id
+
+# Ambil token dari halaman form — kiriman tanpa token yang sah akan ditolak
+# lebih dulu, jadi ini memang harus diambil dari halaman sungguhan.
+TOKEN=$(curl -s "$SITUS/aspirasi" | grep -oE '[0-9]{13}\.[a-f0-9]{64}' | head -1)
+[ -n "$TOKEN" ] && echo "token didapat" || echo "GAGAL: token tidak ditemukan"
+
+# Lewati ambang waktu-isi minimum (3 detik).
+sleep 4
+
+for i in $(seq 1 6); do
+  printf 'kiriman %s -> ' "$i"
+  curl -s -o /dev/null -w '%{http_code}\n' \
+    -X POST "$SITUS/next/aspirasi" \
+    -H 'Content-Type: application/json' \
+    -H "X-Real-IP: 203.0.113.$i" \
+    -H "X-Forwarded-For: 198.51.100.$i" \
+    -d "{\"judul\":\"Uji smoke $i\",\"kategori\":\"lainnya\",\"isi\":\"Kiriman uji otomatis setelah deploy, mohon dihapus pengurus.\",\"token\":\"$TOKEN\"}"
+done
+```
+
+**Yang benar:**
+
+```
+kiriman 1 -> 201
+kiriman 2 -> 201
+kiriman 3 -> 201
+kiriman 4 -> 201
+kiriman 5 -> 201
+kiriman 6 -> 429     <-- ini yang dicari
+```
+
+**Kalau kiriman keenam juga `201`, konfigurasinya salah.** Artinya alamat IP
+karangan tadi dipercaya, sehingga siapa pun bisa mengirim aspirasi tanpa batas.
+Periksa:
+
+1. `proxy_set_header X-Real-IP $remote_addr;` ada di blok `location` yang benar.
+2. `TRUSTED_IP_HEADER` di `.env` server cocok dengan topologi
+   (`cf-connecting-ip` kalau ada Cloudflare, bukan `x-real-ip`).
+3. `pm2 restart itsa-web` sudah dijalankan setelah `.env` diubah — variabel
+   environment hanya dibaca saat proses start.
+
+Kalau semuanya `429` sejak kiriman pertama, berarti jatah untuk alamat itu sudah
+terpakai. Tunggu 10 menit lalu ulangi.
+
+> Skrip ini membuat **5 aspirasi sungguhan** di database. Hapus lewat
+> `/admin` → Aspirasi setelah selesai menguji.
 
 ---
 

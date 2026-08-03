@@ -37,8 +37,37 @@ export async function register(): Promise<void> {
     )
   }
 
+  const headerIp = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase()
+
+  // --- Peringatan: konfigurasi tidak aman, diabaikan aplikasi ---
+  if (headerIp === 'x-forwarded-for' || headerIp === 'forwarded') {
+    console.warn(
+      [
+        '',
+        garis,
+        `PERINGATAN: TRUSTED_IP_HEADER diisi "${headerIp}" — nilai ini DIABAIKAN.`,
+        '',
+        'Header tersebut berisi daftar beruas koma yang boleh ditambahi klien,',
+        'sehingga pengirim bisa mengarang alamat sebanyak yang ia mau dan',
+        'pembatasan lajunya lolos begitu saja.',
+        '',
+        'Aplikasi memperlakukannya seolah TRUSTED_IP_HEADER kosong: tidak ada',
+        'header yang dibaca, semua pengunjung berbagi satu jatah.',
+        '',
+        'Pakai header yang DITIMPA proxy, bukan yang ditambahi:',
+        '  TRUSTED_IP_HEADER=x-real-ip         (Nginx)',
+        '  TRUSTED_IP_HEADER=cf-connecting-ip  (Cloudflare)',
+        '',
+        'Lihat README bagian "Deploy".',
+        garis,
+        '',
+      ].join('\n'),
+    )
+    return
+  }
+
   // --- Peringatan: aman tapi membuat pembatasan laju berlaku global ---
-  if (!process.env.TRUSTED_IP_HEADER) {
+  if (!headerIp) {
     console.warn(
       [
         '',
