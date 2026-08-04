@@ -8,7 +8,14 @@ import { getServerSideURL } from './getURL'
 const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
   const serverUrl = getServerSideURL()
 
-  let url = serverUrl + '/website-template-OG.webp'
+  // Cadangan saat dokumen belum punya meta.image. Berkas sebelumnya
+  // (/website-template-OG.webp) bawaan template dan TIDAK ADA di public/,
+  // sehingga setiap berita tanpa gambar meta menghasilkan og:image 404 —
+  // kartu pratinjaunya kosong saat ditempel di WhatsApp atau Instagram.
+  // /itsa-og.webp ada, berukuran 1200x630 (diverifikasi dengan membaca
+  // berkasnya), dan sama dengan yang dipakai mergeOpenGraph untuk halaman
+  // statis, jadi seluruh situs kini memakai satu gambar bagikan yang sama.
+  let url = serverUrl + '/itsa-og.webp'
 
   if (image && typeof image === 'object' && 'url' in image) {
     const ogUrl = image.sizes?.og?.url
@@ -26,9 +33,13 @@ export const generateMeta = async (args: {
 
   const ogImage = getImageURL(doc?.meta?.image)
 
+  // Akhiran dan cadangan disamakan dengan generateTitle di plugins/index.ts
+  // serta title.default di app/(frontend)/layout.tsx. Ketiganya harus sepakat;
+  // kalau tidak, judul sebuah berita berbeda-beda tergantung jalur mana yang
+  // kebetulan dipakai untuk merendernya.
   const title = doc?.meta?.title
-    ? doc?.meta?.title + ' | Payload Website Template'
-    : 'Payload Website Template'
+    ? `${doc.meta.title} | ITSA PCR`
+    : 'ITSA - Information Technology Student Association'
 
   return {
     description: doc?.meta?.description,
