@@ -5,10 +5,16 @@ import { ArrowUpRight, CalendarDays, MapPin } from 'lucide-react'
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
 import { BadgeStatus } from '@/components/kegiatan/BadgeStatus'
+import { ZONA } from '@/utilities/kegiatan'
 
 const formatTanggal = (nilai?: string | null) =>
   nilai
-    ? new Date(nilai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(nilai).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: ZONA,
+      })
     : null
 
 /**

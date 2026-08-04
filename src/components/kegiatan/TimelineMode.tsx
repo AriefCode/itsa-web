@@ -7,7 +7,7 @@ import type { Event } from '@/payload-types'
 import { KartuKegiatanBaris } from './KartuKegiatanBaris'
 import { KalenderKegiatan } from './KalenderKegiatan'
 import { DaftarHari } from './DaftarHari'
-import { hariTerpakai, kunciHari, namaBulan, sudahSelesai } from '@/utilities/kegiatan'
+import { bagianTanggal, hariTerpakai, kunciHari, namaBulan, sudahSelesai } from '@/utilities/kegiatan'
 
 const PER_HALAMAN = 6
 
@@ -45,7 +45,7 @@ export const TimelineMode: React.FC<{
   const kelompok = useMemo(() => {
     const out: { tahun: number; items: Event[] }[] = []
     for (const e of terlihat) {
-      const tahun = new Date(e.tanggal_mulai).getFullYear()
+      const tahun = bagianTanggal(new Date(e.tanggal_mulai)).tahun
       const akhir = out[out.length - 1]
       if (akhir && akhir.tahun === tahun) akhir.items.push(e)
       else out.push({ tahun, items: [e] })

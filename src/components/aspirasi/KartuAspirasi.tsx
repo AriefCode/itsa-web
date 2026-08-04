@@ -6,9 +6,15 @@ import { CalendarDays, ChevronDown, ImageIcon, MessageSquareQuote, Tag } from 'l
 import type { Aspirasi } from '@/payload-types'
 import { Media } from '@/components/Media'
 import { judulTampil, labelKategori, waktuRelatif } from '@/utilities/aspirasi'
+import { ZONA } from '@/utilities/kegiatan'
 
 const tanggalPanjang = (iso: string) =>
-  new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+  new Date(iso).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: ZONA,
+  })
 
 /** Kartu bagian dalam saat detail dibuka: isi, tanggapan, dan lampiran terpisah. */
 const Blok: React.FC<{ judul: string; Icon: typeof Tag; children: React.ReactNode }> = ({

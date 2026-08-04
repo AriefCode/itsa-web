@@ -11,6 +11,7 @@ import { Media } from '@/components/Media'
 import { PayloadRedirects } from '@/components/PayloadRedirects'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { generateMeta } from '@/utilities/generateMeta'
+import { ZONA } from '@/utilities/kegiatan'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -42,6 +43,7 @@ export default async function BeritaDetail({ params: paramsPromise }: Args) {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        timeZone: ZONA,
       })
     : null
   const gambar =

@@ -4,7 +4,7 @@ import { ArrowRight, MapPin } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
 import { Media } from '@/components/Media'
-import { namaBulan } from '@/utilities/kegiatan'
+import { bagianTanggal, namaBulan } from '@/utilities/kegiatan'
 import { BadgeStatus } from '../BadgeStatus'
 
 const SINGKATAN_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -37,7 +37,7 @@ export const KegiatanLainnya: React.FC<{ events: Event[] }> = ({ events }) => {
           judulnya pecah jadi empat baris dan lokasinya terpotong. */}
       <ul className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {events.map((e) => {
-          const mulai = new Date(e.tanggal_mulai)
+          const mulai = bagianTanggal(new Date(e.tanggal_mulai))
           return (
             // min-w-0: tanpa ini item grid memakai lebar isinya (min-width
             // auto), jadi judul panjang melebarkan kartu dan membuat seluruh
@@ -62,12 +62,12 @@ export const KegiatanLainnya: React.FC<{ events: Event[] }> = ({ events }) => {
 
                 <span className="flex size-14 shrink-0 flex-col items-center justify-center rounded-xl bg-cream font-aksen text-forest">
                   <span className="text-lg font-bold leading-none">
-                    {String(mulai.getDate()).padStart(2, '0')}
+                    {String(mulai.hari).padStart(2, '0')}
                   </span>
                   <span className="mt-0.5 text-[11px] uppercase leading-none">
-                    {SINGKATAN_BULAN[mulai.getMonth()]}
+                    {SINGKATAN_BULAN[mulai.bulan]}
                   </span>
-                  <span className="sr-only">{namaBulan(mulai.getMonth())}</span>
+                  <span className="sr-only">{namaBulan(mulai.bulan)}</span>
                 </span>
 
                 <span className="min-w-0 flex-1">

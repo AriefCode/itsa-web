@@ -120,16 +120,61 @@ const BULAN = [
 
 export const namaBulan = (index: number) => BULAN[index] ?? ''
 
+/**
+ * Situs ini melayani satu zona waktu, dan seluruh tampilan tanggal dipaku ke
+ * sana.
+ *
+ * Tanpa ini, `getDate()`/`getMonth()`/`toLocaleTimeString()` membaca zona mesin
+ * yang kebetulan merender. Di laptop pengembang (WIB) hasilnya benar; di server
+ * yang jamnya UTC — bawaan sebagian besar VPS — jamnya meleset tujuh jam dan
+ * tanggalnya bisa ikut mundur sehari. Bug yang tidak pernah muncul saat
+ * dikembangkan justru muncul di produksi.
+ *
+ * Memakukannya ke satu zona sekaligus menghapus ketidakcocokan hidrasi:
+ * komponen klien dirender lebih dulu di server, lalu dihidrasi di peramban.
+ * Kalau kedua sisi membaca zona ambient masing-masing, string yang dihasilkan
+ * berbeda dan React mengeluh. Dipaku begini, keduanya selalu sama.
+ */
+export const ZONA = 'Asia/Jakarta'
+
+const PEMBACA_BAGIAN = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ZONA,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/**
+ * Komponen tanggal sebuah instant, dibaca DALAM zona WIB.
+ *
+ * Dipakai menggantikan `getDate()`/`getMonth()`/`getFullYear()` di mana pun
+ * yang dibutuhkan adalah "tanggal kalender", bukan titik waktu.
+ */
+export const bagianTanggal = (d: Date): { tahun: number; bulan: number; hari: number } => {
+  const p = Object.fromEntries(PEMBACA_BAGIAN.formatToParts(d).map((x) => [x.type, x.value]))
+  return { tahun: Number(p.year), bulan: Number(p.month) - 1, hari: Number(p.day) }
+}
+
+/**
+ * Kunci hari dari angka, tanpa melewati `Date` sama sekali.
+ *
+ * Dipakai kalender, yang selnya memang sudah berupa angka tahun/bulan/hari.
+ * Membangun `Date` dulu hanya untuk dibaca lagi membuka peluang pergeseran
+ * zona yang justru sedang kita tutup.
+ */
+export const kunciDari = (tahun: number, bulan: number, hari: number): string =>
+  `${tahun}-${String(bulan + 1).padStart(2, '0')}-${String(hari).padStart(2, '0')}`
+
 export const formatTanggal = (nilai?: string | null) => {
   if (!nilai) return null
-  const d = new Date(nilai)
-  return `${d.getDate()} ${namaBulan(d.getMonth())} ${d.getFullYear()}`
+  const { tahun, bulan, hari } = bagianTanggal(new Date(nilai))
+  return `${hari} ${namaBulan(bulan)} ${tahun}`
 }
 
 export const formatJam = (nilai?: string | null) => {
   if (!nilai) return null
   const d = new Date(nilai)
-  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: ZONA })
 }
 
 /**
@@ -137,28 +182,24 @@ export const formatJam = (nilai?: string | null) => {
  * Contoh: "10 - 12 Juni 2026", "30 Juni - 2 Juli 2026", atau "10 Juni 2026".
  */
 export const formatRentang = (mulai: string, selesai?: string | null) => {
-  const a = new Date(mulai)
   if (!selesai) return formatTanggal(mulai)
-  const b = new Date(selesai)
 
-  const hariSama =
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  if (hariSama) return formatTanggal(mulai)
+  const a = bagianTanggal(new Date(mulai))
+  const b = bagianTanggal(new Date(selesai))
 
-  if (a.getFullYear() === b.getFullYear()) {
-    if (a.getMonth() === b.getMonth()) {
-      return `${a.getDate()} - ${b.getDate()} ${namaBulan(a.getMonth())} ${a.getFullYear()}`
+  if (a.tahun === b.tahun && a.bulan === b.bulan && a.hari === b.hari) return formatTanggal(mulai)
+
+  if (a.tahun === b.tahun) {
+    if (a.bulan === b.bulan) {
+      return `${a.hari} - ${b.hari} ${namaBulan(a.bulan)} ${a.tahun}`
     }
-    return `${a.getDate()} ${namaBulan(a.getMonth())} - ${b.getDate()} ${namaBulan(b.getMonth())} ${a.getFullYear()}`
+    return `${a.hari} ${namaBulan(a.bulan)} - ${b.hari} ${namaBulan(b.bulan)} ${a.tahun}`
   }
   return `${formatTanggal(mulai)} - ${formatTanggal(selesai)}`
 }
 
-/** Dua tanggal jatuh pada hari kalender yang sama. */
-const hariSama = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+/** Dua tanggal jatuh pada hari kalender yang sama, menurut zona WIB. */
+const hariSama = (a: Date, b: Date) => kunciHari(a) === kunciHari(b)
 
 /**
  * Jam kegiatan yang enak dibaca: "08.00 - 14.00 WIB".
@@ -207,9 +248,11 @@ export const formatDurasi = (event: Pick<Event, 'tanggal_mulai' | 'tanggal_seles
 export const formatBiaya = (event: Pick<Event, 'gratis' | 'htm'>) =>
   event.gratis || typeof event.htm !== 'number' ? 'Gratis' : `Rp${event.htm.toLocaleString('id-ID')}`
 
-/** Kunci hari lokal (YYYY-MM-DD), dipakai kalender untuk mencocokkan tanggal. */
-export const kunciHari = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/** Kunci hari WIB (YYYY-MM-DD), dipakai kalender untuk mencocokkan tanggal. */
+export const kunciHari = (d: Date): string => {
+  const { tahun, bulan, hari } = bagianTanggal(d)
+  return kunciDari(tahun, bulan, hari)
+}
 
 /** Ubah kunci hari (YYYY-MM-DD) jadi label baca "23 Juli 2026". */
 export const labelHari = (kunci: string): string => {
@@ -241,17 +284,22 @@ export const tanggalAwal = (events: Event[], acuan: Date = new Date()): string |
 export const hariTerpakai = (
   event: Pick<Event, 'tanggal_mulai' | 'tanggal_selesai'>,
 ): string[] => {
-  const mulai = new Date(event.tanggal_mulai)
-  const selesai = event.tanggal_selesai ? new Date(event.tanggal_selesai) : mulai
+  const awal = kunciHari(new Date(event.tanggal_mulai))
+  const akhir = kunciHari(new Date(event.tanggal_selesai || event.tanggal_mulai))
+  // Data tanggal yang terbalik tidak menghasilkan hari apa pun, seperti semula.
+  if (akhir < awal) return []
+
   const hasil: string[] = []
-  const kursor = new Date(mulai.getFullYear(), mulai.getMonth(), mulai.getDate())
-  const batas = new Date(selesai.getFullYear(), selesai.getMonth(), selesai.getDate())
+  // Melangkah dari TENGAH HARI, bukan tengah malam: jauh dari batas hari
+  // sehingga penambahan 24 jam tidak pernah jatuh ke tanggal yang keliru.
+  // WIB tidak mengenal DST, jadi offsetnya tetap +07:00 sepanjang tahun.
+  let kursor = new Date(`${awal}T12:00:00+07:00`)
   // Batas wajar supaya data tanggal yang keliru tidak bikin loop panjang.
-  let pengaman = 0
-  while (kursor <= batas && pengaman < 400) {
-    hasil.push(kunciHari(kursor))
-    kursor.setDate(kursor.getDate() + 1)
-    pengaman++
+  for (let pengaman = 0; pengaman < 400; pengaman++) {
+    const kunci = kunciHari(kursor)
+    hasil.push(kunci)
+    if (kunci >= akhir) break
+    kursor = new Date(kursor.getTime() + 86_400_000)
   }
   return hasil
 }

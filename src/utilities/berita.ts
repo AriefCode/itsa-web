@@ -1,3 +1,4 @@
+import { ZONA } from './kegiatan'
 import type { Category, Media, Post } from '@/payload-types'
 import { ambilTeks, potongTeks } from '@/utilities/lexicalText'
 
@@ -27,7 +28,12 @@ export const badgeKategori = (post: Post): string | null => kategoriPost(post)[0
 
 export const formatTanggalBerita = (nilai?: string | null): string | null =>
   nilai
-    ? new Date(nilai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(nilai).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: ZONA,
+      })
     : null
 
 /** Apakah post punya kategori dengan id tertentu. */

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import type { Event } from '@/payload-types'
-import { hariTerpakai, kunciHari, namaBulan } from '@/utilities/kegiatan'
+import { bagianTanggal, hariTerpakai, kunciDari, kunciHari, namaBulan } from '@/utilities/kegiatan'
 
 const HARI = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
 
@@ -28,9 +28,13 @@ export const KalenderKegiatan: React.FC<{
   const besar = size === 'besar'
   const hariIni = new Date()
 
-  const [view, setView] = useState(() =>
-    value ? pecahKunci(value) : { tahun: hariIni.getFullYear(), bulan: hariIni.getMonth() },
-  )
+  const [view, setView] = useState(() => {
+    if (value) return pecahKunci(value)
+    // Bulan pembuka mengikuti hari ini MENURUT WIB, bukan zona mesin yang
+    // merender — supaya server dan peramban membuka bulan yang sama.
+    const { tahun, bulan } = bagianTanggal(hariIni)
+    return { tahun, bulan }
+  })
 
   const peta = useMemo(() => {
     const m = new Map<string, Event[]>()
@@ -42,8 +46,11 @@ export const KalenderKegiatan: React.FC<{
     const pertama = new Date(view.tahun, view.bulan, 1)
     const geser = (pertama.getDay() + 6) % 7
     const jumlah = new Date(view.tahun, view.bulan + 1, 0).getDate()
-    const sel: (Date | null)[] = Array.from({ length: geser }, () => null)
-    for (let d = 1; d <= jumlah; d++) sel.push(new Date(view.tahun, view.bulan, d))
+    // Sel disimpan sebagai ANGKA hari, bukan Date. Membangun Date di sini
+    // berarti tengah malam zona mesin, lalu dibaca ulang sebagai hari WIB —
+    // dua zona berbeda untuk nilai yang sama, dan kotaknya bisa bergeser.
+    const sel: (number | null)[] = Array.from({ length: geser }, () => null)
+    for (let d = 1; d <= jumlah; d++) sel.push(d)
     return sel
   }, [view])
 
@@ -80,9 +87,9 @@ export const KalenderKegiatan: React.FC<{
       </div>
 
       <div className={`mt-1 grid grid-cols-7 ${besar ? 'gap-2' : 'gap-1'}`}>
-        {kotak.map((tgl, i) => {
-          if (!tgl) return <div key={`kosong-${i}`} />
-          const kunci = kunciHari(tgl)
+        {kotak.map((hari, i) => {
+          if (hari === null) return <div key={`kosong-${i}`} />
+          const kunci = kunciDari(view.tahun, view.bulan, hari)
           const punya = peta.has(kunci)
           const iniHariIni = kunci === kunciHari(hariIni)
           const aktif = kunci === value
@@ -94,7 +101,7 @@ export const KalenderKegiatan: React.FC<{
               disabled={!punya}
               onClick={() => onSelect(kunci)}
               aria-pressed={aktif}
-              aria-label={`${tgl.getDate()} ${namaBulan(view.bulan)} ${view.tahun}${punya ? `, ada kegiatan` : ''}`}
+              aria-label={`${hari} ${namaBulan(view.bulan)} ${view.tahun}${punya ? `, ada kegiatan` : ''}`}
               className={[
                 'relative flex flex-col items-center justify-center rounded-lg font-aksen tabular-nums transition-colors',
                 besar ? 'h-16 text-sm sm:h-20' : 'h-11 text-sm',
@@ -107,7 +114,7 @@ export const KalenderKegiatan: React.FC<{
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
               ].join(' ')}
             >
-              {tgl.getDate()}
+              {hari}
               {punya && (
                 <span
                   aria-hidden
