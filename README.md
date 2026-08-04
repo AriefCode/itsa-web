@@ -20,6 +20,8 @@ README ini dibagi dua. Pilih sesuai peranmu:
 - [Alur kontribusi](#alur-kontribusi)
 - [Aturan penulisan kode](#aturan-penulisan-kode)
 - [Deploy](#deploy) — **wajib dibaca sebelum menayangkan ke server**
+  - [Langkah deploy dari nol](#langkah-deploy-dari-nol) — 14 langkah berurutan
+  - [Smoke test setelah deploy](#smoke-test-setelah-deploy)
 - [Masalah yang sering muncul](#masalah-yang-sering-muncul)
 - [Perintah yang sering dipakai](#perintah-yang-sering-dipakai)
 
@@ -411,46 +413,306 @@ PERINGATAN: TRUSTED_IP_HEADER belum diisi.
 Peringatan itu terbit dari `src/instrumentation.ts`. Kalau tidak muncul dan
 tidak ada error, konfigurasinya sudah terbaca.
 
-### Contoh blok Nginx
+### Konfigurasi Nginx
+
+Templatnya sudah ada di repo: **`deploy/nginx/itsa.pcr.ac.id.conf`**. Tiap baris
+di sana diberi penanda `[WAJIB]` atau `[OPSIONAL]`, jadi jangan menyalin
+sepotong-sepotong dari sini — pakai berkasnya.
+
+Satu baris yang paling menentukan:
 
 ```nginx
-server {
-    server_name itsa.pcr.ac.id;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-
-        # WAJIB: menimpa header, bukan menambahkan. Inilah yang membuat
-        # x-real-ip layak dipercaya oleh aplikasi.
-        proxy_set_header X-Real-IP $remote_addr;
-
-        proxy_set_header Host              $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade           $http_upgrade;
-        proxy_set_header Connection        'upgrade';
-    }
-}
+proxy_set_header X-Real-IP $remote_addr;
 ```
 
-Pembatasan laju di tingkat aplikasi hanya lapis kedua. Lapis utamanya sebaiknya
-di Nginx, karena di sanalah alamat asli benar-benar diketahui:
+Baris itulah satu-satunya alasan `TRUSTED_IP_HEADER=x-real-ip` boleh dipakai —
+ia **menimpa** header kiriman pengunjung. Tanpa baris itu, biarkan
+`TRUSTED_IP_HEADER` kosong.
 
-```nginx
-limit_req_zone $binary_remote_addr zone=aspirasi:10m rate=30r/m;
-
-location /next/aspirasi {
-    limit_req zone=aspirasi burst=5 nodelay;
-    proxy_pass http://127.0.0.1:3000;
-}
-```
+Pembatasan laju di aplikasi hanya lapis kedua. Lapis utamanya `limit_req_zone`
+di Nginx, karena di sana alamat sumber koneksi TCP diketahui dan tidak bisa
+dikarang pengirim. Sudah termasuk di templat.
 
 ### Catatan PM2
 
-Hitungan pembatasan laju disimpan di memori proses. Kalau PM2 dijalankan dalam
-mode **cluster** dengan N instance, tiap instance punya hitungannya sendiri
-sehingga batas efektifnya menjadi 5 × N. Pakai mode `fork` (satu instance), atau
-tegakkan batasnya di Nginx seperti contoh di atas.
+Konfigurasinya sudah ada: **`ecosystem.config.cjs`**.
+
+Mode **fork**, satu instance — jangan diubah ke cluster. Hitungan pembatasan
+laju disimpan di Map memori proses dan tidak dibagi antar proses, jadi cluster
+dengan N instance membuat batas efektifnya menjadi 5 × N kiriman per 10 menit
+alih-alih 5, tanpa satu pun tanda di log. Alasannya ditulis lengkap di dalam
+berkasnya.
+
+---
+
+## Langkah deploy dari nol
+
+Bagian ini ditulis untuk orang yang **belum pernah menyentuh repo ini** —
+termasuk pengurus periode berikutnya. Ikuti berurutan; jangan melompat.
+
+Tanda 🔑 berarti langkah itu dijalankan **di server lewat SSH**.
+
+> **Sebelum mulai, siapkan tiga hal:**
+> 1. Akses SSH ke VPS kampus
+> 2. Subdomain `itsa.pcr.ac.id` sudah mengarah ke alamat IP server
+> 3. Salinan `itsa-web.db` dan `public/media/` dari komputer yang selama ini
+>    dipakai mengembangkan — **keduanya tidak ada di git**
+
+### 1. 🔑 Pasang prasyarat di server
+
+```bash
+node -v          # harus 20.9 ke atas
+npm -v
+git --version
+sqlite3 --version
+sudo npm install -g pm2
+sudo apt install nginx certbot python3-certbot-nginx
+```
+
+### 2. 🔑 Ambil kodenya
+
+```bash
+sudo mkdir -p /var/www && cd /var/www
+sudo chown "$USER" /var/www
+git clone https://github.com/AriefCode/itsa-web.git
+cd itsa-web
+npm ci
+```
+
+`npm ci`, bukan `npm install` — supaya versi paketnya persis mengikuti
+`package-lock.json`.
+
+### 3. 🔑 Susun berkas `.env`
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Isi seperti ini:
+
+```bash
+DATABASE_URL=file:./itsa-web.db
+PAYLOAD_SECRET=<hasil openssl rand -hex 32>
+CRON_SECRET=<hasil openssl rand -hex 32>
+PREVIEW_SECRET=<hasil openssl rand -hex 32>
+NEXT_PUBLIC_SERVER_URL=https://itsa.pcr.ac.id
+TRUSTED_IP_HEADER=
+```
+
+Tiga hal penting:
+
+- **Buat rahasia BARU** dengan `openssl rand -hex 32`. Jangan menyalin dari
+  `.env` di laptop. Kata sandi pengurus tetap berfungsi — yang berubah hanya
+  penandatangan sesi.
+- `NEXT_PUBLIC_SERVER_URL` **dipanggang saat build**. Kalau salah, harus
+  build ulang; mengubah `.env` saja tidak cukup.
+- `TRUSTED_IP_HEADER` **dikosongkan dulu**. Aman, dan diisi belakangan setelah
+  langkah 13 membuktikan Nginx menimpa headernya.
+
+### 4. Salin database dari laptop
+
+Dijalankan **dari laptop**, bukan server:
+
+```bash
+scp itsa-web.db pengguna@server:/var/www/itsa-web/
+```
+
+### 5. Salin berkas media dari laptop
+
+45 MB, 472 berkas. Pakai `rsync`, bukan `scp` — bisa dilanjutkan kalau koneksi
+putus:
+
+```bash
+rsync -avz --progress public/media/ pengguna@server:/var/www/itsa-web/public/media/
+```
+
+Perhatikan garis miring di akhir kedua jalur. Tanpa itu, isinya masuk ke
+subdirektori yang salah.
+
+**Harus selesai sebelum langkah 7**, karena build memprerender halaman kegiatan
+dan berita yang merujuk berkas-berkas ini.
+
+### 6. 🔑 Siapkan riwayat migrasi database — **sekali seumur proyek**
+
+Database yang baru disalin dibuat lewat mode pengembangan, sehingga di dalamnya
+ada penanda yang membuat Payload menolak berjalan otomatis. Perbaikannya dua
+baris SQL.
+
+**Cadangkan dulu:**
+
+```bash
+cd /var/www/itsa-web
+cp itsa-web.db itsa-web.db.sebelum-baseline
+```
+
+**Lihat isinya:**
+
+```bash
+sqlite3 itsa-web.db "SELECT id, name, batch FROM payload_migrations;"
+# keluaran yang diharapkan:  1|dev|-1
+```
+
+Kalau yang muncul `dev|-1`, jalankan:
+
+```bash
+sqlite3 itsa-web.db "DELETE FROM payload_migrations WHERE batch = -1;"
+sqlite3 itsa-web.db "INSERT INTO payload_migrations (name, batch) VALUES ('20260804_151227', 1);"
+```
+
+`20260804_151227` adalah nama migrasi awal — sama dengan nama berkas di
+`src/migrations/`. Kalau kelak ada migrasi yang lebih baru, tetap pakai nama
+migrasi **pertama**, bukan yang terakhir.
+
+**Pastikan berhasil:**
+
+```bash
+sqlite3 itsa-web.db "SELECT id, name, batch FROM payload_migrations;"
+# harus:  1|20260804_151227|1
+
+npx payload migrate
+# harus berhenti di "Done." tanpa menjalankan migrasi apa pun
+```
+
+Kalau `npx payload migrate` malah menampilkan pertanyaan *"It looks like you've
+run Payload in dev mode… data loss will occur"*, **jawab N dan berhenti** —
+berarti baris `dev` belum terhapus. Ulangi perintah `DELETE` di atas.
+
+> Baris `dev` itu penanda "skema dibentuk lewat mode pengembangan". Menjawab Y
+> pada pertanyaan tadi akan membuat Payload menjalankan migrasi awal di atas
+> tabel yang sudah ada — dan itu merusak data.
+
+**Kalau database yang dipakai kosong (mulai dari nol, tanpa isi):** lewati
+seluruh langkah 6 ini, cukup jalankan `npx payload migrate`. Butuh sekitar 9
+detik dan akan membentuk 77 tabel.
+
+### 7. 🔑 Build
+
+```bash
+npm run build
+```
+
+Butuh beberapa menit. Build membaca database, jadi langkah 4–6 harus sudah
+selesai.
+
+### 8. 🔑 Nyalakan lewat PM2
+
+```bash
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup        # ikuti perintah yang ditampilkan, biar hidup lagi setelah reboot
+```
+
+**Pastikan hanya mendengar di localhost:**
+
+```bash
+ss -tlnp | grep 3000
+```
+
+| Keluaran | Artinya |
+|---|---|
+| `127.0.0.1:3000` | **Benar** |
+| `0.0.0.0:3000` atau `*:3000` | **Salah** — aplikasi terbuka ke jaringan, melewati Nginx. Perbaiki sebelum lanjut |
+
+### 9. 🔑 Periksa log saat start
+
+```bash
+pm2 logs itsa-web --lines 50
+```
+
+- Ada `KONFIGURASI TIDAK LENGKAP` → `PAYLOAD_SECRET` kosong, proses berhenti
+- Ada `PERINGATAN: TRUSTED_IP_HEADER belum diisi` → **normal untuk sekarang**,
+  akan dibereskan di langkah 13
+- Tidak ada apa-apa dan situs melayani → lanjut
+
+### 10. 🔑 Pasang Nginx
+
+```bash
+sudo cp deploy/nginx/itsa.pcr.ac.id.conf /etc/nginx/sites-available/itsa
+sudo ln -s /etc/nginx/sites-available/itsa /etc/nginx/sites-enabled/
+sudo nginx -t          # harus "syntax is ok"
+sudo systemctl reload nginx
+```
+
+### 11. 🔑 Aktifkan HTTPS
+
+```bash
+sudo certbot --nginx -d itsa.pcr.ac.id
+```
+
+Certbot menuliskan sendiri baris sertifikatnya. Pastikan `https://itsa.pcr.ac.id`
+terbuka dengan gembok di peramban.
+
+> **Jangan lanjut ke langkah 12 sebelum gembok itu muncul.**
+
+### 12. Buat akun admin pertama
+
+Buka `https://itsa.pcr.ac.id/admin`.
+
+- Kalau database disalin dari laptop, akun yang sudah ada di sana tetap
+  berfungsi
+- Kalau databasenya kosong, Payload menampilkan form **"Create first user"**
+
+> **Wajib lewat HTTPS.** Lewat HTTP polos, login akan **gagal tanpa pesan
+> error** — form terkirim lalu balik ke halaman login seolah kata sandinya
+> salah. Yang sebenarnya terjadi: peramban menolak menyimpan cookie sesi
+> ber-flag `Secure` pada koneksi tidak aman.
+
+### 13. Tentukan `TRUSTED_IP_HEADER`
+
+Sekarang situsnya tayang, topologinya bisa dibuktikan sendiri — tidak perlu
+menunggu penjelasan siapa pun.
+
+Jalankan **smoke test bagian 3** di bawah dengan `TRUSTED_IP_HEADER` masih
+kosong, lalu isi `x-real-ip` dan jalankan ulang:
+
+```bash
+nano .env                 # TRUSTED_IP_HEADER=x-real-ip
+pm2 restart itsa-web
+```
+
+| Hasil smoke test | Artinya | Tindakan |
+|---|---|---|
+| `5×201` lalu `429` | Nginx menimpa header dengan benar | **Biarkan `x-real-ip`** |
+| `6×201` | Header tidak ditimpa | **Kembalikan ke kosong**, periksa langkah 10 |
+
+Membiarkannya kosong tetap aman — hanya saja batas lajunya berlaku global:
+5 kiriman per 10 menit untuk **seluruh** pengunjung digabung.
+
+### 14. Jalankan seluruh smoke test, lalu bersihkan
+
+Ikuti **Smoke test setelah deploy** di bawah — ketiga bagiannya. Jangan lupa
+menghapus baris `SMOKETEST-` setelah selesai.
+
+Terakhir, pasang cadangan otomatis:
+
+```bash
+crontab -e
+# tambahkan — cadangan tiap hari pukul 02:00
+0 2 * * * cd /var/www/itsa-web && ./scripts/backup.sh >> logs/backup.log 2>&1
+```
+
+Salin arsipnya ke tempat lain secara berkala. Cadangan yang duduk di disk yang
+sama dengan aslinya tidak menolong saat disk itu rusak.
+
+### Setelah mengubah field collection
+
+Skema produksi **tidak** ikut berubah sendiri. Alurnya:
+
+```bash
+# di laptop
+npx payload migrate:create        # buat migrasi baru
+git add src/migrations && git commit && git push
+
+# di server
+git pull
+npx payload migrate               # WAJIB sebelum build
+npm run build
+pm2 restart itsa-web
+```
+
+`npx payload migrate` harus dijalankan **sebelum** `npm run build`, karena build
+memprerender halaman yang meng-query database.
 
 ### Smoke test setelah deploy
 
