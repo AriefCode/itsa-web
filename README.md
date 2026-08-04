@@ -485,7 +485,43 @@ pm2 logs itsa-web --lines 50 | grep -A3 "PERINGATAN\|KONFIGURASI"
 - Muncul `PERINGATAN: TRUSTED_IP_HEADER ...` → baca isinya, betulkan, lalu
   `pm2 restart itsa-web`.
 
-#### 2. Pastikan pembatasan laju tidak bisa dilewati
+#### 2. Pastikan cookie sesi admin membawa `Secure`
+
+> ### ⚠️ Jangan login ke `/admin` sebelum HTTPS aktif
+>
+> Kalau sertifikat belum terpasang dan situs masih dilayani lewat HTTP polos,
+> **login admin akan gagal tanpa pesan error**: form terkirim, halaman berputar
+> sebentar, lalu kembali ke halaman login seolah kata sandinya salah. Kata
+> sandinya benar — peramban yang menolak menyimpan cookie sesi, karena cookie
+> ber-flag `Secure` hanya boleh disimpan lewat koneksi aman.
+>
+> Gejalanya menyesatkan: yang tampak seperti "password saya salah" sebenarnya
+> "HTTPS belum aktif". Selesaikan sertifikatnya lebih dulu, baru buat akun
+> admin pertama.
+
+```bash
+curl -sSI "$SITUS/admin/login" | grep -i '^set-cookie' || echo "(belum ada cookie di halaman login — normal)"
+```
+
+Cara yang lebih meyakinkan, karena cookie sesi baru terbit saat login berhasil:
+login lewat peramban, lalu periksa di **DevTools → Application → Cookies**.
+Cookie `payload-token` harus memperlihatkan tiga kolom tercentang:
+
+| Atribut | Harus | Kalau tidak |
+|---|---|---|
+| `Secure` | ✔ | Situs belum HTTPS, atau `NODE_ENV` bukan `production` |
+| `HttpOnly` | ✔ | Seharusnya mustahil — Payload memakukannya |
+| `SameSite` | `Lax` | Ada yang mengubah konfigurasi `auth.cookies` |
+
+Flag `Secure` menyala mengikuti `NODE_ENV`. PM2 harus menjalankan aplikasi
+dengan `NODE_ENV=production` — kalau tidak, cookie terbit tanpa `Secure` meski
+situsnya sudah HTTPS:
+
+```bash
+pm2 env 0 | grep NODE_ENV     # harus production
+```
+
+#### 3. Pastikan pembatasan laju tidak bisa dilewati
 
 Skrip ini berpura-pura jadi penyerang: mengarang alamat IP yang berbeda di tiap
 permintaan. Kalau Nginx menimpa headernya dengan benar, karangan itu tidak
@@ -537,7 +573,7 @@ Periksa:
 Kalau semuanya `429` sejak kiriman pertama, berarti jatah untuk alamat itu sudah
 terpakai. Tunggu 10 menit lalu ulangi.
 
-#### 3. Bersihkan data uji — langsung setelah selesai
+#### 4. Bersihkan data uji — langsung setelah selesai
 
 Skrip di atas meninggalkan **5 aspirasi** (kadang 6, tergantung di kiriman
 keberapa batasnya kena) di database produksi. Semuanya berawalan `SMOKETEST-`.
