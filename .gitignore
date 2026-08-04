@@ -24,6 +24,9 @@ tsconfig.tsbuildinfo
 *.db.bak-*
 backup/
 
+# Log PM2 di server (lihat ecosystem.config.cjs)
+logs/
+
 # Payload default media upload directory
 public/media/
 
