@@ -34,7 +34,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // Repo ini memakai npm (lockfile-nya package-lock.json). Perintah lama
+    // `pnpm dev` bawaan template membuat e2e tidak bisa dinyalakan di mesin
+    // tanpa pnpm. `reuseExistingServer` di bawah tetap melewati perintah ini
+    // kalau sudah ada server yang jalan di port yang sama.
+    command: 'npm run dev',
     reuseExistingServer: true,
     url: 'http://localhost:3000',
   },
