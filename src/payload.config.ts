@@ -70,6 +70,27 @@ export default buildConfig({
     client: {
       url: process.env.DATABASE_URL || '',
     },
+    // CATATAN MIGRASI — sengaja TIDAK memakai `prodMigrations`.
+    //
+    // Di pengembangan Payload menyamakan skema dengan config secara otomatis
+    // (push). Di produksi hal itu tidak terjadi (connect.js:49-50), jadi skema
+    // harus dibentuk lewat migrasi di src/migrations.
+    //
+    // `prodMigrations` akan menjalankannya otomatis saat init ber-NODE_ENV=
+    // production (connect.js:56) — tapi itu ikut menyala saat `next build`,
+    // yang juga berjalan dengan NODE_ENV=production. Pada database hasil push
+    // dev (punya baris payload_migrations batch -1), Payload menampilkan
+    // prompt interaktif "data loss will occur" di setiap worker build, dan
+    // build menggantung selamanya. Diuji langsung: build lokal tidak pernah
+    // selesai.
+    //
+    // Lagi pula migrasi HARUS jalan sebelum `next build`, karena build
+    // memprerender halaman kegiatan & berita yang meng-query database. Migrasi
+    // saat runtime sudah terlambat. Jadi jalankan eksplisit di server:
+    //
+    //   npx payload migrate    # sebelum npm run build
+    //
+    // Lihat README bagian Deploy.
   }),
   collections: [
     Pages,

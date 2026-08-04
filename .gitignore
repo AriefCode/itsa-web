@@ -19,6 +19,10 @@ tsconfig.tsbuildinfo
 *.db
 *.db-journal
 *.db-wal
+# Salinan cadangan database — berisi data sungguhan, jangan sampai ter-commit.
+*.db.bak
+*.db.bak-*
+backup/
 
 # Payload default media upload directory
 public/media/
